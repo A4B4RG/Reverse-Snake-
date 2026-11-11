@@ -11,6 +11,7 @@ export class GameAudio {
   }
   play(kind: "start" | "dash" | "won" | "lost" | "click") {
     if (!this.enabled || !this.context) return;
+    try {
     const notes = { start: [330, 440, 660], dash: [220, 660], won: [392, 494, 587, 784], lost: [220, 165, 110], click: [440] }[kind];
     const context = this.context;
     notes.forEach((frequency, i) => {
@@ -28,6 +29,7 @@ export class GameAudio {
       oscillator.stop(start + 0.2);
       oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
     });
+    } catch { /* Optional audio must never interrupt input or a terminal event. */ }
   }
   close() { void this.context?.close().catch(() => {}); }
 }

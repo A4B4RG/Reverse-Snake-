@@ -2,15 +2,19 @@
 
 ## Browser edition
 
-A complete **React + Next.js + Tailwind CSS** version is now available in [`web/`](web/README.md), with five arenas, three difficulties, keyboard/touch controls, dash, hunger, pause/resume, sound, and saved local scores.
+A complete **React + Next.js + Tailwind CSS** version is now available in [`web/`](web/README.md), with a deep-canopy jungle theme, five arenas, endless Survival, three difficulties, close-call speed boosts, keyboard/touch controls, dash, pause/resume, sound, and saved local scores.
 
 ```powershell
 cd web
-npm install
+npm ci
 npm run dev
 ```
 
 Open **http://localhost:3000**. Read the [repository analysis](web/docs/REPOSITORY_ANALYSIS.md) for the prototype findings and browser implementation decisions. The original Python prototype is preserved below and in its existing folders.
+
+## Deploy the browser game to Vercel
+
+The browser edition is ready for a Next.js deployment. Import this repository in the [Vercel dashboard](https://vercel.com/new), set **Root Directory** to **`web`**, and use **Node.js 24.x**. Build and install commands are included in `web/vercel.json`; no environment variables are required. Follow the [manual deployment guide](web/DEPLOYMENT.md).
 
 ## 🎮 Game Idea
 

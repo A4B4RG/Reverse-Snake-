@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createGame, dash as dashGame, STEP_MS, step, steer as steerGame, type Difficulty, type Direction, type GameState } from "@/lib/game";
+import { createGame, dash as dashGame, STEP_MS, step, steer as steerGame, type Difficulty, type Direction, type GameMode, type GameState } from "@/lib/game";
 import { DEFAULT_DATA, readSavedData, recordRun, saveData, type SavedData } from "@/lib/storage";
 import { GameAudio } from "@/lib/audio";
 
@@ -27,8 +27,11 @@ export function useGame() {
 
   const endRound = useCallback((next: GameState) => {
     directionRef.current = null;
+    // Publish the outcome before optional side effects can fail.
+    setGame(next);
     audioRef.current?.play(next.phase === "won" ? "won" : "lost");
-    persist(recordRun(dataRef.current, next));
+    try { persist(recordRun(dataRef.current, next)); }
+    catch { setStorageAvailable(false); }
   }, [persist]);
 
   useEffect(() => {
@@ -67,7 +70,7 @@ export function useGame() {
     frame = requestAnimationFrame(animate);
     const suspend = () => {
       directionRef.current = null;
-      if (gameRef.current.phase === "running") commit({ ...gameRef.current, phase: "paused" });
+      if (gameRef.current.phase === "running") commit({ ...gameRef.current, pendingDirection: null, phase: "paused" });
     };
     const visibility = () => { if (document.hidden) suspend(); };
     window.addEventListener("blur", suspend);
@@ -85,19 +88,19 @@ export function useGame() {
     audioRef.current?.unlock();
     audioRef.current?.play("start");
     directionRef.current = null;
-    commit({ ...createGame(gameRef.current.arena, gameRef.current.difficulty), phase: "running" });
+    commit({ ...createGame(gameRef.current.arena, gameRef.current.difficulty, gameRef.current.mode), phase: "running" });
   }, [commit]);
 
   const pause = useCallback(() => {
     if (gameRef.current.phase !== "running") return;
     directionRef.current = null;
-    commit({ ...gameRef.current, phase: "paused" });
+    commit({ ...gameRef.current, pendingDirection: null, phase: "paused" });
   }, [commit]);
 
   const resume = useCallback(() => {
     if (gameRef.current.phase !== "paused") return;
     directionRef.current = null;
-    commit({ ...gameRef.current, phase: "running" });
+    commit({ ...gameRef.current, pendingDirection: null, phase: "running" });
   }, [commit]);
 
   const dash = useCallback(() => {
@@ -109,10 +112,10 @@ export function useGame() {
     if (next.phase === "lost") endRound(next);
   }, [commit, endRound]);
 
-  const configure = useCallback((arena: number, difficulty: Difficulty) => {
+  const configure = useCallback((arena: number, difficulty: Difficulty, mode: GameMode = gameRef.current.mode) => {
     if (gameRef.current.phase === "running" || gameRef.current.phase === "paused") return;
     directionRef.current = null;
-    commit(createGame(arena, difficulty));
+    commit(createGame(arena, difficulty, mode));
     persist({ ...dataRef.current, difficulty });
   }, [commit, persist]);
 
@@ -121,8 +124,12 @@ export function useGame() {
     directionRef.current = direction;
     const next = steerGame(gameRef.current, direction);
     commit(next);
-    if (next.phase === "lost") endRound(next);
-  }, [commit, endRound]);
+  }, [commit]);
+
+  const clearDirection = useCallback(() => {
+    directionRef.current = null;
+    gameRef.current = { ...gameRef.current, pendingDirection: null };
+  }, []);
 
   const clearScores = useCallback(() => {
     persist({ ...dataRef.current, runs: [], attempts: 0, wins: 0, best: 0 });
@@ -130,7 +137,7 @@ export function useGame() {
 
   const quit = useCallback(() => {
     directionRef.current = null;
-    commit(createGame(gameRef.current.arena, gameRef.current.difficulty));
+    commit(createGame(gameRef.current.arena, gameRef.current.difficulty, gameRef.current.mode));
   }, [commit]);
 
   const toggleSound = useCallback(() => {
@@ -142,5 +149,5 @@ export function useGame() {
     persist({ ...dataRef.current, sound: enabled });
   }, [persist]);
 
-  return { game, gameRef, directionRef, data, storageAvailable, start, pause, resume, dash, steer, configure, quit, toggleSound, clearScores };
+  return { game, gameRef, directionRef, data, storageAvailable, start, pause, resume, dash, steer, clearDirection, configure, quit, toggleSound, clearScores };
 }

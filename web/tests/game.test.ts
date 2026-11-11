@@ -98,9 +98,12 @@ test("restarting creates a fresh round with selected arena and difficulty", () =
   assert.equal(game.arena, 3); assert.equal(game.difficulty, "hard");
 });
 
-test("a short keyboard or touch press moves immediately, respects collision, and never advances a paused game", () => {
-  assert.deepEqual(steer(running(), "left").player, { x: 4, y: 13 });
-  assert.equal(steer(running({ player: { x: 11, y: 3 } }), "right").phase, "lost");
+test("a short press is buffered until the movement tick, respects collision, and never advances a paused game", () => {
+  let game = steer(running(), "left");
+  assert.deepEqual(game.player, { x: 5, y: 13 });
+  for (let i = 0; i < 5; i++) game = step(game, null);
+  assert.deepEqual(game.player, { x: 4, y: 13 });
+  assert.equal(step(steer(running({ player: { x: 11, y: 3 }, playerClock: 80 }), "right"), null).phase, "lost");
   const paused = running({ phase: "paused" });
   assert.equal(steer(paused, "up"), paused);
 });

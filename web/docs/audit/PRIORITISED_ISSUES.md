@@ -1,5 +1,7 @@
 # Prioritised issues — M0
 
+**11 November 2026 update:** the user subsequently authorized gameplay add-ons and fixes for H-01 and M-01 through M-04, then selected the Deep canopy graphics direction. These are now implemented and verified; M-05 control sizing and a narrow M-06 browser suite were also added. See [Step 2 add-ons](../STEP_2_ADDONS.md) and [current verification](../VERIFICATION.md). The findings below preserve the original audit evidence. Other backlog items remain separate future work.
+
 Date: 10 November 2026. Paths below are relative to `web/`, except the explicitly marked legacy paths. This is an audit backlog, not a claim that fixes were made. Suggested milestone placement is a proposal; gameplay/design changes require the corresponding approval.
 
 Severity reflects impact on the requested browser game: **critical** prevents safe basic operation; **high** undermines core rule consistency; **medium** affects compatibility, input, accessibility or development reliability; **low** is bounded maintainability/performance/provenance debt. Unimplemented future modes are listed in the [feature matrix](CURRENT_FEATURE_MATRIX.md), not inflated into bug counts.
