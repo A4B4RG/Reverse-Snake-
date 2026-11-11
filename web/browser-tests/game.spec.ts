@@ -127,6 +127,23 @@ test("a survival result and its new fields survive a browser reload", async ({ p
   await expect(page.locator(".score-list")).toContainText(`${saved.runs[0].score}`);
 });
 
+test("Wild Heart Survival keeps chasing fruit on the far side of its root wall", async ({ page }) => {
+  await openGame(page);
+  await page.getByRole("button", { name: "Choose Wild Heart", exact: true }).dispatchEvent("click");
+  await page.getByRole("button", { name: "Hard", exact: true }).dispatchEvent("click");
+  await page.getByRole("button", { name: "Survival", exact: true }).dispatchEvent("click");
+  await start(page);
+  // Reach the screenshot's fruit cell via the gap below the root wall.
+  for (const [key, milliseconds] of [["ArrowRight", 1000], ["ArrowDown", 200], ["ArrowRight", 400], ["ArrowUp", 400]] as const) {
+    await page.keyboard.down(key); await page.clock.runFor(milliseconds); await page.keyboard.up(key);
+  }
+  expect(await fruit(page)).toEqual({ x: 19, y: 11 });
+  await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "running");
+  await page.clock.runFor(18_000);
+  await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "lost");
+  await expect(page.getByRole("button", { name: "One more bite" })).toBeVisible();
+});
+
 test("reduced motion retains the boost timer and safe keyboard control", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await openGame(page); await start(page);

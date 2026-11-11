@@ -39,6 +39,8 @@ All movement presses share the fixed simulation budget, so rapid tapping cannot 
 
 The hunter chooses a direction toward you and commits for a short lunge: alternating 4/3 cells on Easy, 3/2 on Normal, and 2/1 on Hard. It cannot reverse into its neck. A dash cannot pass through the hunter, walls, or mossy stones. In Levels the snake shrinks over time; survive 55–75 seconds depending on the arena to win through hunger. In Survival the snake keeps its length and a crash brings a fresh hunter on a clear edge; the round ends when you are caught.
 
+Survival plans a route around stones and the current body at every new lunge, shortening the lunge at known route corners. A lunge already underway stays committed, so a quick dodge can still bait a crash. Replacement hunters recalculate the route to your current position.
+
 Scores: 10 points/second, multiplied by 1 / 1.5 / 2 for Easy / Normal / Hard. Levels also award a win bonus of `1000 + arenaIndex * 250` with the same multiplier. Abandoned rounds are not recorded.
 
 ## Verification

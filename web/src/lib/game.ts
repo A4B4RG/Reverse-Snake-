@@ -91,7 +91,7 @@ export function finish(state: GameState, phase: "won" | "lost", reason: EndReaso
     const top = [...line(0, 0, GRID), ...line(GRID - 1, 1, 2, true)].slice(0, ARENAS[state.arena].length);
     const bottom = top.map(p => ({ x: p.x, y: GRID - 1 - p.y }));
     const useBottom = occupied(state.player, top);
-    return { ...state, snake: useBottom ? bottom : top, snakeDirection: useBottom ? "up" : "down", snakeClock: 0, committedMoves: 0, escapes: state.escapes + 1, reason: null };
+    return { ...state, snake: useBottom ? bottom : top, snakeDirection: useBottom ? "up" : "down", snakeClock: 0, committedMoves: 0, lunges: 0, escapes: state.escapes + 1, reason: null };
   }
   return { ...state, phase, reason, pendingDirection: null, score: state.score + (phase === "won" ? Math.round((1000 + state.arena * 250) * DIFFICULTIES[state.difficulty].multiplier) : 0) };
 }
@@ -116,8 +116,34 @@ export function steer(state: GameState, direction: Direction): GameState {
   return state.phase === "running" ? { ...state, pendingDirection: direction } : state;
 }
 
+/** Shortest walking distances to the current fruit, avoiding stones and body.
+ * The departing tail remains traversable, just as it is in collision handling.
+ * Rebuild at each lunge so movement/respawns cannot retain an obsolete route.
+ */
+function survivalDistances(state: GameState): number[] {
+  const index = (point: Point) => point.y * GRID + point.x;
+  const blocked = new Set([...ARENAS[state.arena].obstacles, ...state.snake.slice(0, -1)].map(index));
+  const distances = Array<number>(GRID * GRID).fill(Infinity);
+  const queue = [state.player];
+  distances[index(state.player)] = 0;
+  for (let i = 0; i < queue.length; i++) {
+    const point = queue[i];
+    for (const direction of DIRECTIONS) {
+      const next = add(point, VECTORS[direction]);
+      if (!inside(next) || blocked.has(index(next)) || distances[index(next)] !== Infinity) continue;
+      distances[index(next)] = distances[index(point)] + 1;
+      queue.push(next);
+    }
+  }
+  return distances;
+}
+
 /** A lunge targets the food, then commits for several cells. It cannot reverse into its neck. */
 export function chooseSnakeDirection(state: GameState): Direction {
+  return selectSnakeDirection(state, state.mode === "survival" ? survivalDistances(state) : null);
+}
+
+function selectSnakeDirection(state: GameState, routes: number[] | null): Direction {
   const current = VECTORS[state.snakeDirection];
   return DIRECTIONS.filter(direction => {
     const v = VECTORS[direction];
@@ -126,7 +152,12 @@ export function chooseSnakeDirection(state: GameState): Direction {
     const cost = (direction: Direction) => {
       const next = add(state.snake[0], VECTORS[direction]);
       const blocked = !inside(next) || occupied(next, ARENAS[state.arena].obstacles) || occupied(next, state.snake.slice(0, -1));
-      return distance(next, state.player) + (blocked ? 100 : 0) + (direction === state.snakeDirection ? -0.2 : 0);
+      if (routes && blocked) return Infinity;
+      const route = routes?.[next.y * GRID + next.x];
+      // If the moving body temporarily cuts off the fruit, keep moving through
+      // legal cells until a route opens rather than choosing a blocked shortcut.
+      const pursuit = routes ? (Number.isFinite(route) ? route! : GRID * GRID + distance(next, state.player)) : distance(next, state.player) + (blocked ? 100 : 0);
+      return pursuit + (direction === state.snakeDirection ? -0.2 : 0);
     };
     return cost(a) - cost(b);
   })[0];
@@ -134,10 +165,29 @@ export function chooseSnakeDirection(state: GameState): Direction {
 
 export function moveSnake(state: GameState): GameState {
   const config = DIFFICULTIES[state.difficulty];
-  const direction = state.committedMoves <= 0 ? chooseSnakeDirection(state) : state.snakeDirection;
+  const planning = state.committedMoves <= 0;
+  const routes = planning && state.mode === "survival" ? survivalDistances(state) : null;
+  const direction = planning ? selectSnakeDirection(state, routes) : state.snakeDirection;
   // Alternate lunge lengths. One fixed length traps the hunter on a sub-grid;
   // stopping exactly at the target's row/column makes wall baits impossible.
-  const commitment = state.committedMoves <= 0 ? config.commitment - state.lunges % 2 : state.committedMoves;
+  let commitment = planning ? config.commitment - state.lunges % 2 : state.committedMoves;
+  if (routes) {
+    // Stop a newly planned lunge at a known route corner. Otherwise a longer
+    // straight commitment can overshoot that corner into the same wall forever.
+    // Reaching the target keeps the full lunge: a mid-lunge dodge can still bait
+    // a crash, and an already committed hunter never redirects retroactively.
+    let point = add(state.snake[0], VECTORS[direction]);
+    for (let moves = 1; moves < commitment; moves++) {
+      if (equal(point, state.player)) break;
+      const following = add(point, VECTORS[direction]);
+      const remaining = routes[point.y * GRID + point.x];
+      if (!inside(following) || !Number.isFinite(remaining) || routes[following.y * GRID + following.x] !== remaining - 1) {
+        commitment = moves;
+        break;
+      }
+      point = following;
+    }
+  }
   const head = add(state.snake[0], VECTORS[direction]);
   const next = { ...state, snakeDirection: direction, committedMoves: commitment - 1, lunges: state.lunges + Number(state.committedMoves <= 0) };
   if (!inside(head)) return finish(next, "won", "wall");

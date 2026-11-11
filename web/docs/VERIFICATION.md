@@ -1,5 +1,17 @@
 # Verification
 
+## Survival pursuit fix — Wild Heart root wall
+
+Verified on 11 November 2026 after the player reported a repeating crash/respawn route with the mango at `(19, 11)` in Wild Heart, Hard Survival.
+
+- Reproduced the original bug from the screenshot's head/body positions: the old straight-line turn choice produced seven resets in 30 seconds without reaching the stationary fruit. The original tests checked clear respawn geometry, but did not check pursuit after respawning.
+- Survival now rebuilds shortest-path distances around obstacles and the current body at each new lunge, respecting the departing tail. A new lunge stops at a known route corner; a lunge already underway stays committed, so a player's dodge can still bait a crash. Each respawn clears the previous hunter's lunge counter.
+- **33 rules tests passed**, including both lunge parities of the screenshot state, a replacement hunter pursuing targets beyond the wall, changed-target routing, corner anticipation, and a successful mid-lunge wall bait followed by renewed pursuit.
+- **Ten production-browser tests passed**, including a real keyboard route to the screenshot's fruit cell, then confirming the hunter reaches that cell rather than entering the reset loop. Lint, production build and TypeScript checks passed.
+- An additional diagnostic sampled 120 arena/difficulty/target combinations after respawn; all stationary targets were reached within 38 snake moves. This sample is not an exhaustive test of every possible moving-body arrangement.
+
+The Levels pursuit rules and the approved graphics/boost settings are unchanged. The older verification below records previous builds.
+
 ## Step 2 add-ons — jungle and close-call boosts
 
 Verified on 11 November 2026 with Node.js 24.19.0, npm 11.17.0 and installed desktop Chrome through Playwright.
