@@ -4,7 +4,9 @@ Candidate release 1.1.0 is prepared on 14 November 2026 on codex/complete-browse
 
 Local checks: clean install, 44 rules tests, lint, zero-findings full audit, build, types and 34 browser tests PASS. One real-tab headless check is explicitly skipped; the event wiring test passes. Production Canvas measurement executed and raw results are committed with this report. Screenshots were reviewed at desktop and mobile sizes.
 
-Hosted blocker: the Browser Use origin approval gate rejected opening the existing Vercel deployment at vercel.com and reported that the user declined access. No alternate browser or indirect access to that blocked destination was attempted. Actual Preview browser verification, promotion/main delivery and production verification remain PENDING until that access is granted or the user changes the release constraint. GitHub candidate/CI state will be recorded once observed.
+Hosted verification gap: the Browser Use origin approval gate rejected opening the existing Vercel deployment at vercel.com and reported that the user declined access. No alternate browser or indirect access to that blocked destination was attempted. The user then explicitly instructed: **"Push main; document hosted verification gap."** Main delivery proceeds under that instruction after CI; actual Preview and production browser verification remain NOT VERIFIED.
+
+Candidate 9901fe1ca5c7472fcedb38800a4398b3ce2fd0ab was pushed to GitHub. [First CI run](https://github.com/A4B4RG/Reverse-Snake-/actions/runs/43520399376) passed clean install, audit, 44 rules tests, lint, build and types, but its browser server could not bind Unix privileged port 599 (EACCES). Playwright now uses unprivileged port 1599 in CI and retains 599 for ordinary local runs. The corrected remote run is recorded after completion.
 
 Baseline / rollback checkpoint: 1a4c040d7057f4c9546c5f67f9596098f6437d31, Fix Survival hunter routing after wall crashes. Existing Vercel success URL: https://vercel.com/anuragghosh1227-8636s-projects/reverse-snake/8zxLAsEqgvbJ84uzsXM2NuQn4voA. Existing production: https://reverse-snake-chi.vercel.app. Repository: https://github.com/A4B4RG/Reverse-Snake-.
 
