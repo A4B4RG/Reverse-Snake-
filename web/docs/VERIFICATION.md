@@ -1,5 +1,32 @@
 # Verification
 
+## Candidate 1.1.0 — current verification
+
+Final local run on 14 November 2026 with Node 24.19.0 and installed Chrome:
+
+- npm ci: PASS from the committed lockfile.
+- npm test: PASS, 44 rules/compatibility tests. Hunter includes spawning, buffered turns/reversals, growth, scoring, body/tail/stone collision and full-board win. Challenge tests cover repeatable starts, exact target and capture precedence. All-mode replay snapshots match repeatedly and reject incompatible/malformed input; storage corruption/quota preserves old mango data.
+- npm run lint, npm audit --audit-level=moderate, npm run build and npm run typecheck: PASS. Full audit reports zero vulnerabilities. All four game/replay routes build successfully.
+- REVERSE_SNAKE_BROWSER=chrome, CI=1, npm run test:browser -- --max-failures 1: PASS, **34 tests**, with **one explicit skip** because this headless browser does not hide background tabs. The separate blur-event test passes; genuine headed/device visibility switching remains NOT VERIFIED.
+- The full browser run includes startup before first RAF, all three Wild Heart Levels difficulties, Survival root-wall chase, mixed real touch/key ownership, boosts/reduced motion, local results, new-mode controls/results/phone layouts, verified replay, visible independent ghost, modal focus, native fullscreen, repeated navigation, offline loaded play, no critical page errors/assets in the lifecycle scenario, and twelve single-viewport cases.
+- Production Canvas sampling executed at 1440 × 900 and 320 × 568; see PERFORMANCE.md and raw performance-results.json.
+
+During this run, hidden desktop arena shortcuts, first-frame startup reset, missing dialog focus return and short-landscape sidebar overflow were reproduced and corrected. Existing historical regressions were retained. Hosted Preview/production checks remain blocked by the origin approval denial; see RELEASE.md.
+
+Clean installation and the scoped TypeScript ESLint/minimatch override yielded **zero full npm audit findings**. Production build and ESLint passed on the new routes. Final complete checks and actual hosted URLs/SHAs are recorded in [RELEASE.md](RELEASE.md) when executed. The reports below remain dated historical evidence; they do not describe the current deployed state automatically.
+
+## Levels pursuit fix — Wild Heart idle start
+
+Verified on 14 November 2026 after a report that Wild Heart Levels awards a win without any movement input.
+
+- Reproduced on all difficulties with the default mango position `(5, 13)`: Easy crashed into an obstacle after 3.38 seconds, Normal after 2.00 seconds, and Hard after 2.38 seconds. The earlier route fix applied only to Survival.
+- Both modes now use the same obstacle/body distances and stop newly planned lunges at route corners. Already committed lunges still continue, so a real dodge can bait a crash. Levels hunger, shrinking, scoring, and crash victories remain in place.
+- **33 rules/compatibility tests passed.** The idle-start regression covers all 30 arena/difficulty/mode combinations and requires capture without a crash or respawn. The previous stationary boundary-win fixture now performs an actual mid-lunge dash and verifies the resulting wall-bait win. Corner and changed-target coverage runs in both modes.
+- **13 production-browser tests passed**, including three new Wild Heart Levels checks that click Start, give no movement or dash input, and verify capture on Easy, Normal, and Hard. Existing Survival pursuit, boosts, input, persistence, and layout checks passed.
+- **Production build, ESLint, and TypeScript checks passed.** In the corrected local simulation, idle Wild Heart capture occurs after 4.42 seconds on Easy, 3.40 seconds on Normal, and 2.38 seconds on Hard.
+
+This Levels fix is currently an uncommitted local change; it has not been deployed by this verification. Earlier live-site checks verified the committed Survival fix. The sections below describe previous builds.
+
 ## Survival pursuit fix — Wild Heart root wall
 
 Verified on 11 November 2026 after the player reported a repeating crash/respawn route with the mango at `(19, 11)` in Wild Heart, Hard Survival.

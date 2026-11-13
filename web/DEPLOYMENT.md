@@ -1,8 +1,12 @@
 # Deploy Reverse Snake to Vercel
 
+The project already exists at https://reverse-snake-chi.vercel.app and is connected to https://github.com/A4B4RG/Reverse-Snake-. Continue through this integration; do not create a second project for maintenance. Root directory remains `web/`, Node 24, with no application environment variables. [Release evidence and rollback](docs/RELEASE.md) records the exact verified candidate and main deployments.
+
+Push a tested `codex/` candidate branch, observe its real Vercel Preview URL and GitHub Actions result, run hosted checks, then fast-forward the verified code onto `main`. Set `REVERSE_SNAKE_BASE_URL` to the actual HTTPS URL for Playwright. Verify production again after the main deployment. If Preview protection requires an existing logged-in session, use that session; do not disable protection or invent a successful check.
+
 Deploy the browser game from `web/`. This folder contains the complete Next.js application, bundled fonts, graphics, dependency lockfile, and Vercel configuration.
 
-## Manual deployment in the dashboard
+## Initial import reference (only for a new installation)
 
 1. Commit and push the latest project files to a GitHub, GitLab, or Bitbucket repository, including the files in `web/`.
 2. Open [Vercel's New Project page](https://vercel.com/new) and import that repository.

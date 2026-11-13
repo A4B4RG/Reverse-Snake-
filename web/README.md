@@ -2,6 +2,8 @@
 
 A playable React / Next.js / Tailwind CSS adaptation of the Python prototype in the parent directory. You control a golden mango under a dark teal jungle canopy. An amber patterned snake hunts you. Bait it into a wall, mossy stone, or its own body—or survive until it runs out of energy in Levels. Survival offers an endless chase.
 
+Version 1.1.0 also includes **Hunter** (control the snake and collect mangoes), three fixed **local Challenges**, completed-run **replays**, and optional matching mango ghosts. Open **Menu** to reach these modes, help, scores, and settings. The core game fits a single viewport on the tested desktop, phone, and landscape sizes. See [current state](docs/CURRENT_STATE.md), [mode contracts](docs/NEW_MODES.md), [limitations](docs/KNOWN_LIMITATIONS.md), and [release evidence](docs/RELEASE.md). Live site: https://reverse-snake-chi.vercel.app.
+
 ## Run locally
 
 Requires Node.js 24, matching the Vercel runtime configured in `package.json` and `.nvmrc`.
@@ -39,7 +41,7 @@ All movement presses share the fixed simulation budget, so rapid tapping cannot 
 
 The hunter chooses a direction toward you and commits for a short lunge: alternating 4/3 cells on Easy, 3/2 on Normal, and 2/1 on Hard. It cannot reverse into its neck. A dash cannot pass through the hunter, walls, or mossy stones. In Levels the snake shrinks over time; survive 55–75 seconds depending on the arena to win through hunger. In Survival the snake keeps its length and a crash brings a fresh hunter on a clear edge; the round ends when you are caught.
 
-Survival plans a route around stones and the current body at every new lunge, shortening the lunge at known route corners. A lunge already underway stays committed, so a quick dodge can still bait a crash. Replacement hunters recalculate the route to your current position.
+Both modes plan a route around stones and the current body at every new lunge, shortening the lunge at known route corners. Standing still at the starting position lets the hunter reach you, including in Wild Heart Levels. A lunge already underway stays committed, so a quick dodge can still bait a crash. Survival replacement hunters recalculate the route to your current position.
 
 Scores: 10 points/second, multiplied by 1 / 1.5 / 2 for Easy / Normal / Hard. Levels also award a win bonus of `1000 + arenaIndex * 250` with the same multiplier. Abandoned rounds are not recorded.
 
@@ -53,6 +55,10 @@ npm run typecheck
 ```
 
 For browser regressions, build first, install Chromium once with `npx playwright install chromium`, then run `npm run test:browser`. The suite starts and stops a production server on loopback port 599. To use an installed Chrome on Windows instead: `$env:REVERSE_SNAKE_BROWSER = 'chrome'; npm run test:browser`.
+
+For hosted verification, set `REVERSE_SNAKE_BASE_URL` to the actual Preview or production HTTPS URL; Playwright then skips its local server. `npm audit --audit-level=moderate` checks all dependencies. GitHub Actions runs clean installation, audit, rules, lint, build, types and browser tests on candidate branches and main.
+
+Hunter turns with WASD/arrows or touch directions and moves automatically. It has no mango dash. Food grows the snake and earns 100 points × difficulty; walls, stones and body collisions lose, filling the free board wins. Local Challenge uses fixed Survival rules with a 15/20/25-second goal. These modes store separate local results. Replays retain three completed runs within bounded size/step limits, validate versions and final state, and exclude abandoned runs. They capture simulation actions rather than audio or paused wall time. Old mango saves retain their original key and semantics.
 
 ## Structure
 

@@ -1,5 +1,7 @@
 # Phaser migration options — proposal for approval
 
+Historical proposal. The 14 November complete-build specification makes migration conditional on measured benefit. See [current technical decisions](../TECHNICAL_DECISIONS.md) and [performance evidence](../PERFORMANCE.md); earlier approval gates and unimplemented-feature claims below describe the dated audit, not current scope or permissions.
+
 Date: 10 November 2026. **No migration has been performed.** This recommendation follows the [M0 audit](REPOSITORY_AUDIT.md) and the user's requirement to use Phaser. It preserves the milestone order in `reverse-snake-prompts.md`.
 
 ## Compare the options

@@ -1,5 +1,7 @@
 # Step 2 add-ons
 
+Historical 11 November implementation report. Subsequent modes, viewport changes and the resolved lint dependency audit are documented in [CURRENT_STATE.md](CURRENT_STATE.md) and [VERIFICATION.md](VERIFICATION.md). The original report is retained below.
+
 Date: 11 November 2026. This implements the user's requested add-ons to the audited browser edition. It does not advance the separate Phaser migration milestones.
 
 ## Approved graphics direction

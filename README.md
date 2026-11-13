@@ -1,5 +1,9 @@
 # 🐍 Reverse Snake
 
+The active application is the browser edition in `web/`. The Python/Kivy files are preserved as the original desktop prototype. Current project status is documented in [PROJECT_STATUS.md](PROJECT_STATUS.md).
+
+[Play the deployed game](https://reverse-snake-chi.vercel.app) · [GitHub repository](https://github.com/A4B4RG/Reverse-Snake-)
+
 ## Browser edition
 
 A complete **React + Next.js + Tailwind CSS** version is now available in [`web/`](web/README.md), with a deep-canopy jungle theme, five arenas, endless Survival, three difficulties, close-call speed boosts, keyboard/touch controls, dash, pause/resume, sound, and saved local scores.
@@ -14,7 +18,15 @@ Open **http://localhost:3000**. Read the [repository analysis](web/docs/REPOSITO
 
 ## Deploy the browser game to Vercel
 
-The browser edition is ready for a Next.js deployment. Import this repository in the [Vercel dashboard](https://vercel.com/new), set **Root Directory** to **`web`**, and use **Node.js 24.x**. Build and install commands are included in `web/vercel.json`; no environment variables are required. Follow the [manual deployment guide](web/DEPLOYMENT.md).
+The browser edition is hosted on Vercel. For a new deployment, import this repository in the [Vercel dashboard](https://vercel.com/new), set **Root Directory** to **`web`**, and use **Node.js 24.x**. Build and install commands are included in `web/vercel.json`; no environment variables are required. Follow the [manual deployment guide](web/DEPLOYMENT.md).
+
+## Browser verification
+
+From `web/`, run `npm test`, `npm run lint`, `npm run build`, and `npm run typecheck`. Production browser tests use `npm run test:browser` after installing a Playwright browser. The GitHub Actions workflow in `.github/workflows/verify.yml` runs the install, dependency audit, rules, lint, build, TypeScript, and Chromium browser checks on pushes to `main` and pull requests.
+
+## Original prototype notes (historical)
+
+The sections below retain the original learning goals and desktop prototype description. Their work-in-progress lists do not describe the implemented browser game.
 
 ## 🎮 Game Idea
 
