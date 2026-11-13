@@ -28,12 +28,19 @@ test("ready, paused, won, and lost states do not advance or charge a dash", () =
   }
 });
 
-test("the snake catches stationary food on every difficulty, without sub-grid blind spots", () => {
-  for (const difficulty of Object.keys(DIFFICULTIES) as Difficulty[]) {
-    let game = running({ difficulty });
-    for (let i = 0; i < 1000 && game.phase === "running"; i++) game = step(game, null);
-    assert.equal(game.phase, "lost", difficulty);
-    assert.equal(game.reason, "caught");
+test("every arena and difficulty catches idle food in both modes without an automatic crash win", () => {
+  for (const mode of ["levels", "survival"] as const) {
+    for (const arena of ARENAS.keys()) {
+      for (const difficulty of Object.keys(DIFFICULTIES) as Difficulty[]) {
+        let game: GameState = { ...createGame(arena, difficulty, mode), phase: "running" };
+        for (let i = 0; i < 1500 && game.phase === "running"; i++) game = step(game, null);
+        const label = `${ARENAS[arena].name}, ${difficulty}, ${mode}`;
+        assert.equal(game.phase, "lost", label);
+        assert.equal(game.reason, "caught", label);
+        assert.equal(game.escapes, 0, label);
+        assert.deepEqual(game.player, { x: 5, y: 13 }, "the player never moved");
+      }
+    }
   }
 });
 
@@ -46,9 +53,19 @@ test("a committed lunge into a wall, hedge, or body awards a win", () => {
   assert.equal(body.phase, "won"); assert.equal(body.reason, "body");
 });
 
-test("baiting the left boundary wins through a real AI chase, without forcing a direction", () => {
-  let game = running({ player: { x: 0, y: 13 } });
-  for (let i = 0; i < 1000 && game.phase === "running"; i++) game = step(game, null);
+test("a real mid-lunge dodge at the left boundary still baits a crash win", () => {
+  let game = running({ player: { x: 0, y: 3 } });
+  let dodged = false;
+  for (let i = 0; i < 1000 && game.phase === "running"; i++) {
+    game = step(game, null);
+    if (!dodged && game.snake[0].x === 1 && game.snake[0].y === game.player.y && game.snakeDirection === "left" && game.committedMoves > 0) {
+      game = dash(game, "down");
+      dodged = true;
+    }
+  }
+  assert(dodged, "the player dodges after the AI starts its lunge");
+  assert.deepEqual(game.player, { x: 0, y: 6 });
+  assert.equal(game.closeCalls, 1);
   assert.equal(game.phase, "won");
   assert.equal(game.reason, "wall");
 });

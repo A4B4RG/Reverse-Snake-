@@ -37,13 +37,15 @@ test("a fresh survival hunter routes around the wall toward the current fruit po
   }
 });
 
-test("Survival plans a turn before a known wall and follows a moved target at the next lunge", () => {
-  const corner = { ...reportedState(), snake: [{ x: 18, y: 4 }, { x: 17, y: 4 }, { x: 16, y: 4 }], snakeDirection: "right" as const };
-  const approaching = moveSnake(corner);
-  assert.deepEqual(approaching.snake[0], { x: 19, y: 4 });
-  assert.equal(approaching.committedMoves, 0, "replan at the route corner instead of overshooting the edge");
-  assert.equal(chooseSnakeDirection(approaching), "down");
-  assert.equal(chooseSnakeDirection({ ...approaching, player: { x: 19, y: 1 } }), "up");
+test("both modes plan a turn before a known wall and follow a moved target at the next lunge", () => {
+  for (const mode of ["levels", "survival"] as const) {
+    const corner = { ...reportedState(), mode, snake: [{ x: 18, y: 4 }, { x: 17, y: 4 }, { x: 16, y: 4 }], snakeDirection: "right" as const };
+    const approaching = moveSnake(corner);
+    assert.deepEqual(approaching.snake[0], { x: 19, y: 4 });
+    assert.equal(approaching.committedMoves, 0, "replan at the route corner instead of overshooting the edge");
+    assert.equal(chooseSnakeDirection(approaching), "down");
+    assert.equal(chooseSnakeDirection({ ...approaching, player: { x: 19, y: 1 } }), "up");
+  }
 });
 
 test("a mid-lunge dodge still baits a Survival crash and the respawn clears the old commitment", () => {

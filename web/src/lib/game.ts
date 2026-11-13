@@ -120,7 +120,7 @@ export function steer(state: GameState, direction: Direction): GameState {
  * The departing tail remains traversable, just as it is in collision handling.
  * Rebuild at each lunge so movement/respawns cannot retain an obsolete route.
  */
-function survivalDistances(state: GameState): number[] {
+function pursuitDistances(state: GameState): number[] {
   const index = (point: Point) => point.y * GRID + point.x;
   const blocked = new Set([...ARENAS[state.arena].obstacles, ...state.snake.slice(0, -1)].map(index));
   const distances = Array<number>(GRID * GRID).fill(Infinity);
@@ -140,10 +140,10 @@ function survivalDistances(state: GameState): number[] {
 
 /** A lunge targets the food, then commits for several cells. It cannot reverse into its neck. */
 export function chooseSnakeDirection(state: GameState): Direction {
-  return selectSnakeDirection(state, state.mode === "survival" ? survivalDistances(state) : null);
+  return selectSnakeDirection(state, pursuitDistances(state));
 }
 
-function selectSnakeDirection(state: GameState, routes: number[] | null): Direction {
+function selectSnakeDirection(state: GameState, routes: number[]): Direction {
   const current = VECTORS[state.snakeDirection];
   return DIRECTIONS.filter(direction => {
     const v = VECTORS[direction];
@@ -152,11 +152,11 @@ function selectSnakeDirection(state: GameState, routes: number[] | null): Direct
     const cost = (direction: Direction) => {
       const next = add(state.snake[0], VECTORS[direction]);
       const blocked = !inside(next) || occupied(next, ARENAS[state.arena].obstacles) || occupied(next, state.snake.slice(0, -1));
-      if (routes && blocked) return Infinity;
-      const route = routes?.[next.y * GRID + next.x];
+      if (blocked) return Infinity;
+      const route = routes[next.y * GRID + next.x];
       // If the moving body temporarily cuts off the fruit, keep moving through
       // legal cells until a route opens rather than choosing a blocked shortcut.
-      const pursuit = routes ? (Number.isFinite(route) ? route! : GRID * GRID + distance(next, state.player)) : distance(next, state.player) + (blocked ? 100 : 0);
+      const pursuit = Number.isFinite(route) ? route : GRID * GRID + distance(next, state.player);
       return pursuit + (direction === state.snakeDirection ? -0.2 : 0);
     };
     return cost(a) - cost(b);
@@ -166,8 +166,9 @@ function selectSnakeDirection(state: GameState, routes: number[] | null): Direct
 export function moveSnake(state: GameState): GameState {
   const config = DIFFICULTIES[state.difficulty];
   const planning = state.committedMoves <= 0;
-  const routes = planning && state.mode === "survival" ? survivalDistances(state) : null;
-  const direction = planning ? selectSnakeDirection(state, routes) : state.snakeDirection;
+  // Both modes must anticipate arena walls; an idle fruit is not a wall bait.
+  const routes = planning ? pursuitDistances(state) : null;
+  const direction = routes ? selectSnakeDirection(state, routes) : state.snakeDirection;
   // Alternate lunge lengths. One fixed length traps the hunter on a sub-grid;
   // stopping exactly at the target's row/column makes wall baits impossible.
   let commitment = planning ? config.commitment - state.lunges % 2 : state.committedMoves;
