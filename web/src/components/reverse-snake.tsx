@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { ArrowDown, ArrowDownLeft, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, AudioLines, Check, ChevronLeft, ChevronRight, CornerDownLeft, Expand, Heart, MoveUpRight, Pause, Play, RotateCcw, Route, Shrink, Sprout, Trophy, VolumeX, X, Zap } from "lucide-react";
 import { ARENAS, CLOSE_CALL_DURATION, DASH_COOLDOWN, DIFFICULTIES, formatTime, type Difficulty, type Direction } from "@/lib/game";
 import { GameInput, keyboardSource, movementDirection } from "@/lib/input";
@@ -9,10 +10,11 @@ import { GameCanvas } from "./game-canvas";
 import { GardenMap, JungleFruit, SnakeMark } from "./pixel-art";
 import { Modal } from "./modal";
 
-type Dialog = "guide" | "scores" | "about" | null;
+type Dialog = "guide" | "scores" | "about" | "menu" | null;
 
 export default function ReverseSnake() {
-  const { game, gameRef, directionRef, data, storageAvailable, start, pause, resume, dash, steer, clearDirection, configure, quit, toggleSound, clearScores } = useGame();
+  const [ghostEnabled, setGhostEnabled] = useState(false);
+  const { game, gameRef, directionRef, ghostRef, data, storageAvailable, start, pause, resume, dash, steer, clearDirection, configure, quit, toggleSound, clearScores } = useGame(ghostEnabled);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -107,6 +109,7 @@ export default function ReverseSnake() {
         <button onClick={() => openDialog("guide")}>How to play <ArrowUpRight size={14} /></button>
         <button onClick={() => openDialog("scores")}>Your best runs <ArrowUpRight size={14} /></button>
       </nav>
+      <button className="menu-button" onClick={() => openDialog("menu")} aria-label="Open game menu">Menu</button>
       <button className={`sound-button ${!data.sound ? "muted" : ""}`} onClick={toggleSound} aria-label={data.sound ? "Mute sound" : "Enable sound"} aria-pressed={data.sound}>{data.sound ? <AudioLines size={17} /> : <VolumeX size={17} />}<span>Sound {data.sound ? "on" : "off"}</span></button>
     </header>
 
@@ -127,7 +130,7 @@ export default function ReverseSnake() {
 
           <div className={`board-stage ${game.phase === "lost" ? "board-lost" : ""} ${game.boostRemaining > 0 ? "board-boosted" : ""}`} data-phase={game.phase}>
             <span className="board-side-label left-label">DEEP CANOPY / STAY WILD</span>
-            <GameCanvas gameRef={gameRef} canvasRef={canvasRef} />
+            <GameCanvas gameRef={gameRef} canvasRef={canvasRef} ghostRef={ghostRef} />
             <span className="board-side-label right-label">THE JUNGLE IS WATCHING</span>
             {game.phase === "ready" && <div className="board-overlay ready-overlay">
               <div className="overlay-tag"><span /> THE TABLES HAVE TURNED</div>
@@ -167,6 +170,7 @@ export default function ReverseSnake() {
       {!storageAvailable && <p className="storage-notice" role="status">Browser storage is unavailable. Scores will last for this visit only.</p>}
     </main>
 
+    {dialog === "menu" && <Modal title="Explore the canopy." onClose={() => setDialog(null)}><div className="game-menu"><Link href="/hunter">Hunter · control the snake</Link><Link href="/challenge">Local Challenges</Link><Link href="/replays">Watch saved replays</Link><button onClick={() => setDialog("guide")}>How to play</button><button onClick={() => setDialog("scores")}>Your best runs</button><button onClick={() => setDialog("about")}>About Reverse Snake</button><label className="ghost-option"><input type="checkbox" checked={ghostEnabled} disabled={active} onChange={event=>setGhostEnabled(event.target.checked)} />Show the last matching mango ghost next round</label><p className="score-note">Completed rounds save up to three replays locally. A ghost appears when a saved replay matches your setup.</p></div></Modal>}
     <div className="sr-only" role="status" aria-live="polite">{game.closeCalls > 0 ? `Close call ${game.closeCalls}. Double speed for ${CLOSE_CALL_DURATION[game.mode] / 1000} seconds.` : ""}</div>
     <div className="sr-only" role="status" aria-live="polite">{game.phase === "won" ? `You won with ${Math.floor(game.score)} points. ${outcomeText}` : game.phase === "lost" ? `The snake caught you. You scored ${Math.floor(game.score)} points. Try again.` : game.phase === "paused" ? "Game paused." : game.phase === "running" ? "Game started. Hold arrow keys or WASD to move." : "Ready to play."}</div>
 
@@ -178,6 +182,6 @@ export default function ReverseSnake() {
 
     {dialog === "scores" && <Modal title="Your little hall of fame." onClose={() => { setDialog(null); setConfirmClear(false); }}><p className="modal-intro">Small escapes deserve big recognition. Your best runs, saved in this browser.</p><div className="lifetime-stats"><div><strong>{data.best.toLocaleString()}</strong><span>BEST SCORE</span></div><div><strong>{data.attempts}</strong><span>COMPLETED RUNS</span></div><div><strong>{data.wins}</strong><span>GREAT ESCAPES</span></div></div>{bestRuns.length ? <ol className="score-list">{bestRuns.map((run, index) => <li key={run.id}><span className="rank">0{index + 1}</span><div><strong>{ARENAS[run.arena].name}</strong><span>{run.mode === "survival" ? "Survival" : "Levels"} · {DIFFICULTIES[run.difficulty].label} · {formatTime(run.elapsed)} · {run.won ? "Escaped" : "Eaten"} · {run.closeCalls} close calls</span></div><strong>{run.score.toLocaleString()} <small>pts</small></strong>{run.won && <Trophy size={16}/>}</li>)}</ol> : <div className="empty-scores"><Trophy size={34}/><h3>Greatness starts with a first bite.</h3><p>Finish a round and your score will appear here.</p></div>}<p className="score-note">10 points per second. Level escape bonus starts at 1,000. Survival scores time.<br/>Normal earns 1.5× points. Hard earns 2× points. Abandoned rounds aren’t recorded.</p>{data.attempts > 0 && <div className="clear-scores">{confirmClear ? <><span>Clear all saved runs and your personal best?</span><div><button onClick={() => { clearScores(); setConfirmClear(false); }}>Yes, clear scores</button><button onClick={() => setConfirmClear(false)}>Keep my scores</button></div></> : <button onClick={() => setConfirmClear(true)}>Clear local scores</button>}</div>}</Modal>}
 
-    {dialog === "about" && <Modal title="A classic, from the other side." onClose={() => setDialog(null)}><div className="about-art"><SnakeMark/><span>→</span><JungleFruit/></div><p className="modal-intro">Reverse Snake began as a Python and Kivy prototype with one question: what if you were the food?</p><p className="about-copy">This browser edition keeps the original 20 × 20 grid and turns that idea into five playable arenas. No accounts, no downloads, no grand destiny. Just a little mango refusing to be lunch.</p><div className="about-tags"><span><Sprout size={14}/>5 arenas</span><span><Zap size={14}/>3 difficulties</span><span><Heart size={14}/>Made to play</span></div><button className="modal-primary" onClick={() => setDialog(null)}>Back to the jungle <ArrowRight size={18}/></button></Modal>}
+    {dialog === "about" && <Modal title="A classic, from the other side." onClose={() => setDialog(null)}><div className="about-art"><SnakeMark/><span>→</span><JungleFruit/></div><p className="modal-intro">Reverse Snake began as a Python and Kivy prototype with one question: what if you were the food?</p><p className="about-copy">This browser edition keeps the original 20 × 20 grid and turns that idea into five playable arenas. No accounts, no downloads, no grand destiny. Just a little mango refusing to be lunch.</p><p className="score-note"><a href="/third-party-notices.txt">Font and icon licence notices →</a></p><div className="about-tags"><span><Sprout size={14}/>5 arenas</span><span><Zap size={14}/>3 difficulties</span><span><Heart size={14}/>Made to play</span></div><button className="modal-primary" onClick={() => setDialog(null)}>Back to the jungle <ArrowRight size={18}/></button></Modal>}
   </>;
 }

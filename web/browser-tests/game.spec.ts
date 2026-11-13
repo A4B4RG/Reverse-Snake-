@@ -4,6 +4,7 @@ import { mkdir } from "node:fs/promises";
 async function openGame(page: Page) {
   await page.clock.install({ time: new Date("2026-11-11T12:00:00Z") });
   await page.goto("/");
+  await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   await page.clock.pauseAt(new Date("2026-11-11T12:00:01Z"));
   await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "ready");
 }
@@ -13,6 +14,18 @@ async function start(page: Page) {
   await page.clock.runFor(40);
   await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "running");
 }
+
+test("starting before the first animation frame cannot reset the round", async ({page}) => {
+  const time = new Date("2026-11-14T00:00:00Z");
+  await page.clock.install({time}); await page.clock.pauseAt(time);
+  await page.goto("/");
+  await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
+  await page.getByRole("button", {name: "Let’s play"}).dispatchEvent("click");
+  await page.clock.runFor(100);
+  await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "running");
+  await page.clock.runFor(100);
+  await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "running");
+});
 
 // Read the fruit's visible pixels, without exposing or mutating game state.
 async function fruit(page: Page) {
@@ -127,6 +140,22 @@ test("a survival result and its new fields survive a browser reload", async ({ p
   await expect(page.locator(".score-list")).toContainText(`${saved.runs[0].score}`);
 });
 
+for (const difficulty of ["Easy", "Normal", "Hard"] as const) {
+  test(`Wild Heart Levels ${difficulty}: standing still loses instead of awarding an automatic win`, async ({ page }) => {
+    await openGame(page);
+    await page.getByRole("button", { name: "Choose Wild Heart", exact: true }).dispatchEvent("click");
+    await page.getByRole("button", { name: difficulty, exact: true }).dispatchEvent("click");
+    await page.getByRole("button", { name: "Levels", exact: true }).dispatchEvent("click");
+    await start(page);
+    expect(await fruit(page)).toEqual({ x: 5, y: 13 });
+    // Start only: no movement key, pointer input, or dash baits the hunter.
+    await page.clock.runFor(20_000);
+    await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "lost");
+    expect(await fruit(page)).toEqual({ x: 5, y: 13 });
+    await expect(page.getByRole("button", { name: "One more bite" })).toBeVisible();
+  });
+}
+
 test("Wild Heart Survival keeps chasing fruit on the far side of its root wall", async ({ page }) => {
   await openGame(page);
   await page.getByRole("button", { name: "Choose Wild Heart", exact: true }).dispatchEvent("click");
@@ -184,7 +213,8 @@ test("jungle layout, text contrast and control sizes at desktop and mobile width
     });
   });
   expect(contrast.every(ratio => ratio >= 4.5)).toBe(true);
-  await page.getByRole("button", { name: "Your best runs", exact: true }).last().dispatchEvent("click");
+  await page.getByRole("button", { name: "Open game menu", exact: true }).click();
+  await page.getByRole("button", { name: "Your best runs", exact: true }).click();
   const scoreContrast = await page.locator(".score-note").evaluate(el => {
     const luminance = (rgb: string) => {
       const c = rgb.match(/[\d.]+/g)!.slice(0, 3).map(n => Number(n) / 255).map(n => n <= .04045 ? n / 12.92 : ((n + .055) / 1.055) ** 2.4);

@@ -26,7 +26,7 @@ function mango(ctx: CanvasRenderingContext2D, point: Point, boosted: boolean) {
 }
 
 /** Effects represent the rules state; they never alter hitboxes or clocks. */
-export function renderGame(ctx: CanvasRenderingContext2D, game: GameState, reduceMotion = false) {
+export function renderGame(ctx: CanvasRenderingContext2D, game: GameState, reduceMotion = false, ghost?: Point | null) {
   const size = CANVAS_SIZE;
   ctx.clearRect(0, 0, size, size);
   const ground = ctx.createRadialGradient(300, 260, 30, 300, 300, 400);
@@ -64,6 +64,11 @@ export function renderGame(ctx: CanvasRenderingContext2D, game: GameState, reduc
   if (!reduceMotion && game.dashFlash > 0) {
     ctx.globalAlpha = game.dashFlash / 500;
     game.trail.forEach(point => { const p = center(point); leaf(ctx, p.x, p.y, 10, -0.6, "#ffe0a0"); }); ctx.globalAlpha = 1;
+  }
+  if (ghost) {
+    const p = center(ghost); ctx.save(); ctx.globalAlpha = .35;
+    ctx.strokeStyle = "#59ead1"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(p.x, p.y, 10, 13, -.45, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
   }
   const body = [...game.snake].reverse();
   ctx.lineCap = "round"; ctx.lineJoin = "round";
