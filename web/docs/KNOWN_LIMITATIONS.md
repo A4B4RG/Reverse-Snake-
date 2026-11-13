@@ -10,4 +10,4 @@
 - The Python/Kivy prototype and zero-byte native placeholders are retained history and have no reproducible supported desktop release.
 - A project-wide licence has not been chosen by the owner. Third-party font/icon notices are retained.
 
-Any release-blocking failure found in automated or hosted checks must be resolved before main delivery. Hosted verification remains pending until RELEASE.md records observed results.
+Local and Linux CI checks passed before main delivery. Hosted browser verification remains NOT VERIFIED under the user's explicit waiver documented in RELEASE.md; source delivery does not certify the current production build. Future reproduced failures should be assessed against the exact affected build.

@@ -8,6 +8,10 @@ Hosted verification gap: the Browser Use origin approval gate rejected opening t
 
 Candidate 9901fe1ca5c7472fcedb38800a4398b3ce2fd0ab was pushed to GitHub. [First CI run](https://github.com/A4B4RG/Reverse-Snake-/actions/runs/43520399376) passed clean install, audit, 44 rules tests, lint, build and types, but its browser server could not bind Unix privileged port 599 (EACCES). Playwright now uses unprivileged port 1599 in CI and retains 599 for ordinary local runs. The corrected remote run is recorded after completion.
 
+**GitHub delivery verified:** main was fast-forwarded and pushed at 57a1977cb0b883dccf057df852f5a42d95103273; the GitHub commits/main API confirmed that exact SHA. All code, tests, asset notices, status reports and CI are included. This release-evidence documentation update follows the source release without changing gameplay.
+
+[Corrected candidate CI](https://github.com/A4B4RG/Reverse-Snake-/actions/runs/43520881817) **PASS**, 1m49s: clean install, full audit (zero findings), 44 rules tests, lint, production build, typecheck, browser installation, **34 browser passes and one headless visibility skip**. Hosted Preview/production checks remain NOT VERIFIED under the user's explicit release waiver. The existing integration may build main; a GitHub push alone is not proof of deployed gameplay.
+
 Baseline / rollback checkpoint: 1a4c040d7057f4c9546c5f67f9596098f6437d31, Fix Survival hunter routing after wall crashes. Existing Vercel success URL: https://vercel.com/anuragghosh1227-8636s-projects/reverse-snake/8zxLAsEqgvbJ84uzsXM2NuQn4voA. Existing production: https://reverse-snake-chi.vercel.app. Repository: https://github.com/A4B4RG/Reverse-Snake-.
 
 Delivery procedure: build/test candidate, push a codex branch, observe real GitHub/Vercel status, verify the actual HTTPS Preview (modes, input, results, assets, console, viewport), fast-forward verified code onto main, observe production deployment, then verify production. Do not invent a Preview URL or treat a dashboard success as a browser check.

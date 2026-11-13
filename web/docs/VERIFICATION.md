@@ -13,6 +13,8 @@ Final local run on 14 November 2026 with Node 24.19.0 and installed Chrome:
 
 During this run, hidden desktop arena shortcuts, first-frame startup reset, missing dialog focus return and short-landscape sidebar overflow were reproduced and corrected. Existing historical regressions were retained. Hosted Preview/production checks remain blocked by the origin approval denial; see RELEASE.md.
 
+Actual GitHub Linux CI also passed: [run 43520881817](https://github.com/A4B4RG/Reverse-Snake-/actions/runs/43520881817), checked source 57a1977cb0b883dccf057df852f5a42d95103273, 44 rules tests / 34 browser tests / one documented visibility skip. The first CI run's EACCES on port 599 was corrected by using 1599 when CI is set. The user then authorized main delivery with hosted checks documented as unverified; GitHub main delivery was confirmed. RELEASE.md contains exact evidence.
+
 Clean installation and the scoped TypeScript ESLint/minimatch override yielded **zero full npm audit findings**. Production build and ESLint passed on the new routes. Final complete checks and actual hosted URLs/SHAs are recorded in [RELEASE.md](RELEASE.md) when executed. The reports below remain dated historical evidence; they do not describe the current deployed state automatically.
 
 ## Levels pursuit fix — Wild Heart idle start
