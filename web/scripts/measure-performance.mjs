@@ -45,7 +45,7 @@ const report = {
   date: new Date().toISOString(),
   browser: "Headless Chromium/Chrome",
   scope:
-    "Local production build, five seconds per viewport, idle mango; includes terminal rendering. No physical-device claim.",
+    "Local production build, five seconds per viewport, idle fruit; includes terminal rendering. No physical-device claim.",
   results,
 };
 await writeFile(

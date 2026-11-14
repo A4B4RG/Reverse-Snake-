@@ -1,14 +1,16 @@
 # Performance evidence
 
-The production Canvas baseline was measured with REVERSE_SNAKE_BROWSER=chrome, node scripts/measure-performance.mjs against a built production server on port 599. Raw output: [performance-results.json](performance-results.json), timestamp 13 November 2026 22:31:46 UTC (14 November in India).
+Version 1.2.0's local production build was sampled on 14 November 2026 at 04:41:18 UTC with `REVERSE_SNAKE_BROWSER=chrome` and `node scripts/measure-performance.mjs http://127.0.0.1:1599`. Raw data: [performance-results.json](performance-results.json).
 
-| Viewport | Sampled RAF frames / 5s | Median / p95 frame interval | Maximum interval | DOM loaded | First contentful paint |
+| Viewport | Sampled RAF frames / 5s | Median / p95 interval | Maximum interval | DOM loaded | First contentful paint |
 | --- | --- | --- | --- | --- | --- |
-| 1440 × 900 | 801 | 6.1 / 6.3 ms | 41.5 ms | 89.2 ms | 324 ms |
-| 320 × 568 | 805 | 6.1 / 6.3 ms | 12.1 ms | 61.4 ms | 72 ms |
+| 1440 × 900 | 818 | 6.1 / 6.2 ms | 30.3 ms | 51.6 ms | 304 ms |
+| 320 × 568 | 826 | 6.1 / 6.2 ms | 8.1 ms | 20.5 ms | 64 ms |
 
-The measurement uses a five-second idle-mango run, including terminal rendering, in a local headless browser on this Windows host. RAF sample cadence is tied to this host/browser and is not a claim that Canvas paints every sample. Startup values are local and the second viewport may benefit from warm caches. This is not a physical-phone benchmark, sustained active-play certification, CPU/GPU profile or cloud-network startup guarantee.
+This is a five-second idle-fruit chase on this Windows/headless Chrome host, including terminal rendering. RAF cadence is host-dependent and does not claim Canvas redraw on every sample. Local startup and warmed caches do not predict hosted-network startup. The sample is not a sustained human-learning workload, physical-phone benchmark or CPU/GPU profile. Behavior/inference correctness is covered by separate tests.
 
-Current design bounds: 400 logical cells, 20 ms simulation, paths only at planned lunges, capped six-cell boost trails, capped three-cell dash trails, a 200 ms catch-up clamp and an 80 ms React HUD cadence. Paused/unchanged worlds skip Canvas redraw. Animation frame listeners and audio are cleaned up on unmount. Replay retention is limited to three 250 KB records and 180,000 simulation steps; an over-limit game continues without recording.
+Board geometry is derived from the viewport and bounded to 12–96 cells per axis; the active map is no longer a fixed 400-cell square. Routing is bounded by board area and runs at planned lunges. Each neural policy has 14 inputs, 12 hidden units and four outputs. Actual human movement triggers its training; persisted models are saved periodically and on pause/outcome/navigation. Trails remain capped, fixed simulation steps are 20 ms, catch-up is clamped at 200 ms and React's HUD is throttled to 80 ms. Canvas skips unchanged visual states. The paused background advances a separate replay cursor without live training or scoring. Timers/listeners/Canvas observers/audio are cleaned up on unmount.
 
-Phaser is deferred pending evidence of a concrete scene/rendering requirement or measured bottleneck. A migration must retain pure rules, compare identical states, measure bundle/frame costs and preserve Canvas fallback until parity. Merely installing Phaser does not establish a performance benefit.
+Three completed replays are bounded to 250 KB each and 180,000 steps. The separate unscored preview is also bounded. Score entries omit neural snapshots. No TensorFlow, remote inference or new runtime dependency is introduced.
+
+Phaser remains a separate migration decision requiring a concrete scene/rendering benefit and measured parity against the pure rules. The current evidence establishes local behavior only; external player balance and real-device performance remain future validation.

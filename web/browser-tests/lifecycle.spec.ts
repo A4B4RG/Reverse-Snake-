@@ -68,7 +68,7 @@ test("repeated controls, modal focus, navigation and offline play retain one gam
   await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   await page.getByRole("button", { name: "Start round" }).click();
   await page.keyboard.press("Escape");
-  await page.getByRole("link", { name: "Mango", exact: true }).click();
+  await page.getByRole("link", { name: "Fruit", exact: true }).click();
   await expect(page.locator("canvas")).toHaveCount(1);
   await expect(page.locator(".board-stage")).toHaveAttribute(
     "data-phase",

@@ -1,13 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  createHunter,
+  createHunter as createRectHunter,
   hunterStep,
   turnHunter,
   spawnFood,
   type HunterState,
 } from "../src/lib/hunter";
 import { ARENAS } from "../src/lib/game";
+const createHunter=(arena=0,difficulty:Parameters<typeof createRectHunter>[1]="normal",seed=1)=>createRectHunter(arena,difficulty,seed,{columns:20,rows:20});
 
 test("Hunter seeded food is reproducible and never occupies a wall or body", () => {
   for (let arena = 0; arena < 5; arena++)
@@ -83,5 +84,5 @@ test("Hunter pause is inert and a full board has no food", () => {
     x: i % 20,
     y: Math.floor(i / 20),
   }));
-  assert.equal(spawnFood(0, cells, 1).food, null);
+  assert.equal(spawnFood(0,cells,1,{columns:20,rows:20}).food, null);
 });

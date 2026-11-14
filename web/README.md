@@ -1,10 +1,10 @@
 # Reverse Snake — browser edition
 
-A playable React / Next.js / Tailwind CSS adaptation of the Python prototype in the parent directory. You control a golden mango in a jungle canopy. An amber patterned snake hunts you. Bait it into a wall, mossy stone, or its own body—or survive until it runs out of energy in Levels. Survival offers an endless chase.
+A fruit-neutral browser game with flexible boards that fill the outer playing area and expand in fullscreen. Escape a learning snake in Levels or Survival, or control the snake against an evasive fruit in Hunter. Three timed local Challenges and completed-run Replays are available.
 
-Version 1.1.0 also includes **Hunter** (control the snake and collect mangoes), three fixed **local Challenges**, completed-run **replays**, and optional matching mango ghosts. Open **Menu** to reach these modes, help, scores, and settings. The core game fits a single viewport on the tested desktop, phone, and landscape sizes. See [current state](docs/CURRENT_STATE.md), [mode contracts](docs/NEW_MODES.md), [limitations](docs/KNOWN_LIMITATIONS.md), and [release evidence](docs/RELEASE.md). Live site: https://reverse-snake-chi.vercel.app.
+Version 1.2.0 adds two trainable local neural policies, five selectable fruit skins and four snake designs, full fruit ghosts at 32% opacity, and a translucent blurred pause with independent recorded gameplay behind it. Choose your look before every match; learning and appearance persist separately from existing scores. The live round remains frozen during pause.
 
-**Light** is the default theme: pale canopy surfaces with deep teal text. **Menu → Theme → Dark** restores the original dark teal palette. The selection applies to the page, menus, maps and Canvas in all modes, persists locally, and synchronizes between tabs. Click or tap Menu to toggle it; keyboard activation also works. Hover highlights options without opening Menu or pausing the round. Mango's menu offers Hunter, and Hunter's menu offers Mango, omitting the current mode from those two links. Escape, the close button, or clicking outside closes it. Opening Menu pauses gameplay and replay; resume explicitly when ready. If theme storage is blocked, switching still works for the current visit.
+Light is the default theme; Menu → Theme → Dark restores the original palette. Menu opens by click, tap or keyboard and offers the alternate Fruit/Hunter mode. The game fits one viewport on the tested desktop, phone and landscape sizes. See [current state](docs/CURRENT_STATE.md), [mode contracts](docs/NEW_MODES.md), [limitations](docs/KNOWN_LIMITATIONS.md), and [release evidence](docs/RELEASE.md). The root PROJECT_STATUS.md is preserved project history. Hosted verification is still unverified under the user's explicit waiver; a main push does not establish the deployed version at https://reverse-snake-chi.vercel.app.
 
 ## Run locally
 
@@ -60,7 +60,7 @@ For browser regressions, build first, install Chromium once with `npx playwright
 
 For hosted verification, set `REVERSE_SNAKE_BASE_URL` to the actual Preview or production HTTPS URL; Playwright then skips its local server. `npm audit --audit-level=moderate` checks all dependencies. GitHub Actions runs clean installation, audit, rules, lint, build, types and browser tests on candidate branches and main.
 
-Hunter turns with WASD/arrows or touch directions and moves automatically. It has no mango dash. Food grows the snake and earns 100 points × difficulty; walls, stones and body collisions lose, filling the free board wins. Local Challenge uses fixed Survival rules with a 15/20/25-second goal. These modes store separate local results. Replays retain three completed runs within bounded size/step limits, validate versions and final state, and exclude abandoned runs. They capture simulation actions rather than audio or paused wall time. Old mango saves retain their original key and semantics.
+Hunter turns with WASD/arrows or touch directions and moves automatically. It has no fruit dash. Food grows the snake and earns 100 points × difficulty; walls, stones and body collisions lose, filling the free board wins. Local Challenge uses fixed Survival rules with a 15/20/25-second goal. These modes store separate local results. Replays retain three completed runs within bounded size/step limits, validate versions and final state, and exclude abandoned runs. They capture simulation actions rather than audio or paused wall time. Old fruit saves retain their original key and semantics.
 
 ## Structure
 

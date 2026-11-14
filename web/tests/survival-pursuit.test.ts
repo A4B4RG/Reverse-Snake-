@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { chooseSnakeDirection, createGame, finish, moveSnake, step, type GameState } from "../src/lib/game.ts";
+import { chooseSnakeDirection, createGame as createRectGame, finish, moveSnake, step, type GameState } from "../src/lib/game.ts";
+const createGame=(arena=0,difficulty:Parameters<typeof createRectGame>[1]="normal",mode:Parameters<typeof createRectGame>[2]="levels")=>createRectGame(arena,difficulty,mode,{columns:20,rows:20});
 
 // Wild Heart, Hard: fruit on the right of the root wall, matching the report.
 const reportedState = (lunges = 0): GameState => ({

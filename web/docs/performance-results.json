@@ -1,31 +1,31 @@
 {
-  "date": "2026-11-13T22:31:46.954Z",
+  "date": "2026-11-14T04:41:18.947Z",
   "browser": "Headless Chromium/Chrome",
-  "scope": "Local production build, five seconds per viewport, idle mango; includes terminal rendering. No physical-device claim.",
+  "scope": "Local production build, five seconds per viewport, idle fruit; includes terminal rendering. No physical-device claim.",
   "results": [
     {
       "viewport": {
         "width": 1440,
         "height": 900
       },
-      "frames": 801,
+      "frames": 818,
       "medianFrameMs": 6.099999999999909,
-      "p95FrameMs": 6.299999999999727,
-      "maxFrameMs": 41.5,
-      "domContentLoadedMs": 89.19999999925494,
-      "firstContentfulPaintMs": 324
+      "p95FrameMs": 6.200000000000273,
+      "maxFrameMs": 30.300000000000182,
+      "domContentLoadedMs": 51.599999994039536,
+      "firstContentfulPaintMs": 304
     },
     {
       "viewport": {
         "width": 320,
         "height": 568
       },
-      "frames": 805,
+      "frames": 826,
       "medianFrameMs": 6.099999999999909,
-      "p95FrameMs": 6.300000000000182,
-      "maxFrameMs": 12.100000000000364,
-      "domContentLoadedMs": 61.40000000037253,
-      "firstContentfulPaintMs": 72
+      "p95FrameMs": 6.2000000000000455,
+      "maxFrameMs": 8.099999999999909,
+      "domContentLoadedMs": 20.5,
+      "firstContentfulPaintMs": 64
     }
   ]
 }

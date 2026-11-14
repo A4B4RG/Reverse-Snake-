@@ -5,7 +5,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Reverse Snake — Outsmart the hunter.",
-  description: "A small mango in a hungry jungle. Dodge, dash and earn close-call speed boosts in five arenas or endless survival.",
+  description: "Choose your fruit and snake design. Escape a learning hunter or control the snake on a board that fits your screen.",
   applicationName: "Reverse Snake",
   icons: { icon: "/icon.svg" },
 };

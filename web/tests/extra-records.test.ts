@@ -79,7 +79,7 @@ test("Hunter wins when the last free cell is collected", () => {
     y: Math.floor(i / 20),
   })).filter((p) => p.x !== 1 || p.y !== 0);
   const state = {
-    ...createHunter(),
+    ...createHunter(0,"normal",1,{columns:20,rows:20}),
     phase: "running" as const,
     snake,
     food,

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ARENAS, CLOSE_CALL_DURATION, createGame, dash, equal, finish, step, steer, type GameState } from "../src/lib/game.ts";
+import { ARENAS, CLOSE_CALL_DURATION, createGame as createRectGame, dash, equal, finish, step, steer, type GameState } from "../src/lib/game.ts";
+const createGame=(arena=0,difficulty:Parameters<typeof createRectGame>[1]="normal",mode:Parameters<typeof createRectGame>[2]="levels")=>createRectGame(arena,difficulty,mode,{columns:20,rows:20});
 
 const running = (overrides: Partial<GameState> = {}): GameState => ({ ...createGame(), phase: "running", snakeClock: -1000000, ...overrides });
 const nearHead = (overrides: Partial<GameState> = {}) => running({ player: { x: 11, y: 3 }, playerClock: 80, ...overrides });

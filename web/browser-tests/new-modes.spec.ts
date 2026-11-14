@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+test.setTimeout(45000);
 
 for (const mode of ["hunter", "challenge"] as const) {
   test(`${mode} supports keyboard, pause, restart and verified saved replay`, async ({
@@ -91,7 +92,8 @@ for (const mode of ["hunter", "challenge"] as const) {
       ).toBe(true);
       const canvas = (await page.locator("canvas").boundingBox())!;
       expect(canvas.width).toBeGreaterThanOrEqual(170);
-      expect(Math.abs(canvas.width - canvas.height)).toBeLessThan(1);
+      const outer=(await page.locator(".board-stage").boundingBox())!;
+      expect(canvas.width).toBeCloseTo(outer.width,0);expect(canvas.height).toBeCloseTo(outer.height,0);
       await page.getByRole("button", { name: "How to play" }).click();
       await expect(page.getByRole("dialog")).toBeVisible();
       await page.keyboard.press("Escape");

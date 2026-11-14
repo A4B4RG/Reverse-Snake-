@@ -1,4 +1,13 @@
-import { createGame, step, type Direction, type GameState } from "./game";
+import { DEFAULT_BOARD, nearestFree, project, type Board } from "./board";
+import { createLearning, type Learning } from "./learning";
+import { DEFAULT_APPEARANCE, type Appearance } from "./appearance";
+import {
+  obstaclesFor,
+  createGame,
+  step,
+  type Direction,
+  type GameState,
+} from "./game";
 
 export const CHALLENGES = [
   {
@@ -27,14 +36,37 @@ export const CHALLENGES = [
   },
 ] as const;
 export type Challenge = (typeof CHALLENGES)[number];
-export function createChallenge(challenge: Challenge): GameState {
-  const game = createGame(challenge.arena, challenge.difficulty, "survival");
+export function createChallenge(
+  challenge: Challenge,
+  board: Board = DEFAULT_BOARD,
+  learning: Learning = createLearning(),
+  appearance: Appearance = DEFAULT_APPEARANCE,
+): GameState {
+  const game = createGame(
+    challenge.arena,
+    challenge.difficulty,
+    "survival",
+    board,
+    learning,
+    appearance,
+  );
   const starts = [
     { x: 5, y: 13 },
     { x: 2, y: 13 },
     { x: 18, y: 18 },
   ];
-  return { ...game, player: starts[challenge.seed % starts.length] };
+  return {
+    ...game,
+    player: nearestFree(
+      project(
+        starts[challenge.seed % starts.length],
+        { columns: 20, rows: 20 },
+        board,
+      ),
+      board,
+      [...obstaclesFor(game.arena, board), ...game.snake],
+    ),
+  };
 }
 export function challengeStep(
   s: GameState,

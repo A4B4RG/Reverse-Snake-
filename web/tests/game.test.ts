@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ARENAS, createGame, dash, DIFFICULTIES, equal, inside, moveSnake, step, steer, type Difficulty, type GameState } from "../src/lib/game.ts";
+import { ARENAS, createGame as createRectGame, dash, DIFFICULTIES, equal, inside, moveSnake, step, steer, type Difficulty, type GameState } from "../src/lib/game.ts";
 import { DEFAULT_DATA, readSavedData, recordRun, saveData } from "../src/lib/storage.ts";
+const createGame=(arena=0,difficulty:Parameters<typeof createRectGame>[1]="normal",mode:Parameters<typeof createRectGame>[2]="levels")=>createRectGame(arena,difficulty,mode,{columns:20,rows:20});
 
 const running = (overrides: Partial<GameState> = {}): GameState => ({ ...createGame(), phase: "running", ...overrides });
 
@@ -9,7 +10,7 @@ test("every arena has valid, connected, non-overlapping starting entities", () =
   ARENAS.forEach((arena, index) => {
     const game = createGame(index);
     assert.equal(game.snake.length, arena.length);
-    assert(game.snake.every(inside));
+    assert(game.snake.every(p=>inside(p,game.board)));
     assert(inside(game.player));
     assert(!game.snake.some(p => equal(p, game.player)));
     assert(!arena.obstacles.some(p => equal(p, game.player)));

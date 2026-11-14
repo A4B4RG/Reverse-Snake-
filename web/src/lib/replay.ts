@@ -1,5 +1,6 @@
 import {
   createGame,
+  resizeGame,
   dash,
   steer,
   step,
@@ -11,13 +12,20 @@ import {
 import { CHALLENGES, challengeStep, createChallenge } from "./challenge";
 import {
   createHunter,
+  resizeHunter,
   hunterStep,
   turnHunter,
   type HunterState,
 } from "./hunter";
 
-export const GAME_VERSION = "1.1.0";
-export const RULESET = "canopy-2";
+import { validBoard, type Board } from "./board";
+import { validLearning, type Learning } from "./learning";
+import { validAppearance, type Appearance } from "./appearance";
+import * as legacyGame from "./legacy/game";
+import * as legacyHunter from "./legacy/hunter";
+import * as legacyChallenge from "./legacy/challenge";
+export const GAME_VERSION = "1.2.0";
+export const RULESET = "orchard-3";
 export type RunMode = GameMode | "hunter" | "challenge";
 export type RunMeta = {
   mode: RunMode;
@@ -25,6 +33,9 @@ export type RunMeta = {
   difficulty: Difficulty;
   seed: number;
   challenge?: string;
+  board?: Board;
+  learning?: Learning;
+  appearance?: Appearance;
 };
 export function isRunMeta(value: unknown): value is RunMeta {
   if (!value || typeof value !== "object") return false;
@@ -38,6 +49,12 @@ export function isRunMeta(value: unknown): value is RunMeta {
     !Number.isInteger(m.seed) ||
     m.seed < 0 ||
     m.seed > 0xffffffff
+  )
+    return false;
+  if (
+    (m.board !== undefined && !validBoard(m.board)) ||
+    (m.learning !== undefined && !validLearning(m.learning)) ||
+    (m.appearance !== undefined && !validAppearance(m.appearance))
   )
     return false;
   if (m.mode === "challenge") {
@@ -55,9 +72,11 @@ export type RunState = GameState | HunterState;
 export type Command =
   | { action: "step"; direction: Direction | null; count: number }
   | { action: "steer" | "dash"; direction: Direction | null }
-  | { action: "clear" | "pause" | "resume" };
+  | { action: "clear" | "pause" | "resume" }
+  | { action: "resize"; board: Board };
 export type Replay = {
-  format: 1;
+  format: 1 | 2;
+  preview?: boolean;
   version: string;
   ruleset: string;
   meta: RunMeta;
@@ -74,18 +93,46 @@ const MAX_BYTES = 250_000,
 const direction = (v: unknown): v is Direction | null =>
   v === null || ["up", "down", "left", "right"].includes(v as string);
 export const isHunter = (s: RunState): s is HunterState => "turns" in s;
-export function createRun(meta: RunMeta): RunState {
+export function createRun(meta: RunMeta, legacy = false): RunState {
+  if (legacy) {
+    const s =
+      meta.mode === "hunter"
+        ? legacyHunter.createHunter(meta.arena, meta.difficulty, meta.seed)
+        : meta.mode === "challenge"
+          ? legacyChallenge.createChallenge(
+              legacyChallenge.CHALLENGES.find((c) => c.id === meta.challenge)!,
+            )
+          : legacyGame.createGame(meta.arena, meta.difficulty, meta.mode);
+    return { ...s, phase: "running" } as unknown as RunState;
+  }
   if (meta.mode === "hunter")
     return {
-      ...createHunter(meta.arena, meta.difficulty, meta.seed),
+      ...createHunter(
+        meta.arena,
+        meta.difficulty,
+        meta.seed,
+        meta.board,
+        meta.learning,
+        meta.appearance,
+      ),
       phase: "running",
     };
   if (meta.mode === "challenge") {
     const challenge = CHALLENGES.find((c) => c.id === meta.challenge)!;
-    return { ...createChallenge(challenge), phase: "running" };
+    return {
+      ...createChallenge(challenge, meta.board, meta.learning, meta.appearance),
+      phase: "running",
+    };
   }
   return {
-    ...createGame(meta.arena, meta.difficulty, meta.mode),
+    ...createGame(
+      meta.arena,
+      meta.difficulty,
+      meta.mode,
+      meta.board,
+      meta.learning,
+      meta.appearance,
+    ),
     phase: "running",
   };
 }
@@ -93,22 +140,62 @@ export function applyCommand(
   s: RunState,
   command: Command,
   meta: RunMeta,
+  legacy = false,
 ): RunState {
+  if (command.action === "resize")
+    return legacy
+      ? s
+      : isHunter(s)
+        ? resizeHunter(s, command.board)
+        : resizeGame(s, command.board);
   if (command.action === "step") {
-    if (isHunter(s)) return hunterStep(s);
+    if (isHunter(s))
+      return legacy
+        ? (legacyHunter.hunterStep(
+            s as unknown as legacyHunter.HunterState,
+          ) as unknown as RunState)
+        : hunterStep(s);
     const challenge = CHALLENGES.find((c) => c.id === meta.challenge);
     return meta.mode === "challenge" && challenge
-      ? challengeStep(s, command.direction, challenge)
-      : step(s, command.direction);
+      ? legacy
+        ? (legacyChallenge.challengeStep(
+            s as unknown as legacyGame.GameState,
+            command.direction,
+            challenge,
+          ) as unknown as RunState)
+        : challengeStep(s, command.direction, challenge)
+      : legacy
+        ? (legacyGame.step(
+            s as unknown as legacyGame.GameState,
+            command.direction,
+          ) as unknown as RunState)
+        : step(s, command.direction);
   }
   if (command.action === "steer")
     return command.direction
       ? isHunter(s)
-        ? turnHunter(s, command.direction)
-        : steer(s, command.direction)
+        ? legacy
+          ? (legacyHunter.turnHunter(
+              s as unknown as legacyHunter.HunterState,
+              command.direction,
+            ) as unknown as RunState)
+          : turnHunter(s, command.direction)
+        : legacy
+          ? (legacyGame.steer(
+              s as unknown as legacyGame.GameState,
+              command.direction,
+            ) as unknown as RunState)
+          : steer(s, command.direction)
       : s;
   if (command.action === "dash")
-    return isHunter(s) ? s : dash(s, command.direction);
+    return isHunter(s)
+      ? s
+      : legacy
+        ? (legacyGame.dash(
+            s as unknown as legacyGame.GameState,
+            command.direction,
+          ) as unknown as RunState)
+        : dash(s, command.direction);
   if (command.action === "pause" && s.phase === "running")
     return {
       ...s,
@@ -159,14 +246,20 @@ export class Recorder {
     else this.commands.push({ ...command });
     if (this.commands.length > MAX_GROUPS) this.overflow = true;
   }
-  finish(s: RunState): Replay | null {
-    if (this.overflow || (s.phase !== "won" && s.phase !== "lost")) return null;
+  finish(s: RunState, preview = false): Replay | null {
+    if (
+      this.overflow ||
+      (!preview && s.phase !== "won" && s.phase !== "lost") ||
+      (preview && !this.steps)
+    )
+      return null;
     const replay: Replay = {
-      format: 1,
+      format: 2,
+      ...(preview ? { preview: true } : {}),
       version: GAME_VERSION,
       ruleset: RULESET,
       meta: this.meta,
-      commands: this.commands,
+      commands: this.commands.map((c) => ({ ...c })),
       final: fingerprint(s),
       elapsed: s.elapsed,
       score: s.score,
@@ -186,9 +279,12 @@ export function parseReplay(value: unknown): Replay | null {
     const r = value as Replay,
       m = r.meta;
     if (
-      r.format !== 1 ||
-      r.version !== GAME_VERSION ||
-      r.ruleset !== RULESET ||
+      !(
+        (r.format === 1 && r.version === "1.1.0" && r.ruleset === "canopy-2") ||
+        (r.format === 2 && r.version === GAME_VERSION && r.ruleset === RULESET)
+      ) ||
+      !isRunMeta(m) ||
+      (r.preview !== undefined && typeof r.preview !== "boolean") ||
       !m ||
       !["levels", "survival", "hunter", "challenge"].includes(m.mode) ||
       !Number.isInteger(m.arena) ||
@@ -234,6 +330,8 @@ export function parseReplay(value: unknown): Replay | null {
       } else if (c.action === "dash" || c.action === "steer") {
         if (!direction(c.direction) || (c.action === "steer" && !c.direction))
           return null;
+      } else if (c.action === "resize") {
+        if (r.format !== 2 || !validBoard(c.board)) return null;
       } else if (!["clear", "pause", "resume"].includes(c.action)) return null;
     }
     return r;
@@ -248,7 +346,7 @@ export class ReplayCursor {
   done = false;
   valid = true;
   constructor(public replay: Replay) {
-    this.state = createRun(replay.meta);
+    this.state = createRun(replay.meta, replay.format === 1);
   }
   advance() {
     if (this.done) return this.state;
@@ -256,11 +354,21 @@ export class ReplayCursor {
       const command = this.replay.commands[this.index];
       if (command.action === "step") {
         if (!this.remaining) this.remaining = command.count;
-        this.state = applyCommand(this.state, command, this.replay.meta);
+        this.state = applyCommand(
+          this.state,
+          command,
+          this.replay.meta,
+          this.replay.format === 1,
+        );
         if (!--this.remaining) this.index++;
         return this.state;
       }
-      this.state = applyCommand(this.state, command, this.replay.meta);
+      this.state = applyCommand(
+        this.state,
+        command,
+        this.replay.meta,
+        this.replay.format === 1,
+      );
       this.index++;
     }
     this.done = true;
@@ -300,10 +408,29 @@ export function saveReplay(replay: Replay): boolean {
 }
 export function compatibleGhost(r: Replay, m: RunMeta) {
   return (
+    r.format === 2 &&
+    r.meta.board?.columns === m.board?.columns &&
+    r.meta.board?.rows === m.board?.rows &&
     r.meta.mode === m.mode &&
     r.meta.arena === m.arena &&
     r.meta.difficulty === m.difficulty &&
     r.meta.seed === m.seed &&
     r.meta.challenge === m.challenge
   );
+}
+
+const PREVIEW_KEY = "reverse-snake:preview:v2";
+export function readPreview(): Replay | null {
+  try {
+    const raw = localStorage.getItem(PREVIEW_KEY);
+    return raw && raw.length <= MAX_BYTES ? parseReplay(JSON.parse(raw)) : null;
+  } catch {
+    return null;
+  }
+}
+export function savePreview(replay: Replay | null) {
+  if (!replay) return;
+  try {
+    localStorage.setItem(PREVIEW_KEY, JSON.stringify(replay));
+  } catch {}
 }

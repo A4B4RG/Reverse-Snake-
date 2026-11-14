@@ -496,3 +496,64 @@ body { height: 100dvh; display: flex; flex-direction: column; padding: env(safe-
 @media (max-width: 900px) and (min-height: 501px) { .menu-panel { top: calc(env(safe-area-inset-top) + 60px); max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 76px); } }
 @media (max-width: 640px) { .mode-nav { display: none; } }
 @media (max-height: 500px) { .menu-panel { top: calc(env(safe-area-inset-top) + 56px); max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 72px); } }
+
+/* Playable cells fill the outer rectangle; the viewport determines their count. */
+.game-canvas { width:100%;height:100%;max-width:100%;aspect-ratio:auto; }
+.game-sidebar { display:flex;flex-direction:column;min-height:0; }
+.controls-section { margin-top:auto;padding-top:16px; }
+.appearance-picker { margin:14px 0 0;padding:0;border:0;min-width:0; }
+.appearance-picker legend { font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:6px; }
+.skin-row { display:flex;gap:5px;margin-bottom:5px; }
+.skin-row button { width:44px;height:44px;min-width:44px;min-height:44px;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:4px;color:var(--forest); }
+.skin-row button[aria-pressed="true"] { border:2px solid var(--rush);background:var(--menu-hover); }
+.skin-row svg { width:100%;height:100%; }
+.appearance-picker:disabled { opacity:.65; }
+.hero-sticker > svg { position:static;width:58px;height:58px;transform:none; }
+.board-overlay.pause-overlay { background:#0a292f60;backdrop-filter:blur(6px); }
+:root:not([data-theme="dark"]) .board-overlay.pause-overlay { background:#edf4e570; }
+.pause-overlay h2,.pause-overlay p,.pause-overlay .overlay-tag { text-shadow:0 1px 8px var(--paper); }
+@media (max-width:900px) and (min-height:501px) {
+  .game-sidebar { display:grid; }
+  .appearance-picker { grid-column:1 / -1;display:flex;gap:8px;align-items:center;margin:0; }
+  .appearance-picker legend { float:left;position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%); }
+  .skin-row { flex:1;min-width:0;overflow:auto;gap:2px;margin:0;scrollbar-width:none; }
+  .extra-setup { flex-wrap:wrap; }
+  .extra-setup .appearance-picker { flex-basis:100%; }
+}
+@media (max-height:620px) and (min-width:901px) {
+  .appearance-picker { margin-top:6px; }
+  .skin-row { margin-bottom:2px; }
+  .controls-section { display:none; }
+}
+
+.game-sidebar { gap:0; }
+.game-sidebar.extra-setup { gap:12px; }
+.extra-setup .mode-help { margin-top:auto;flex-shrink:0; }
+.control-row { flex-wrap:nowrap;font-size:11px;margin-bottom:4px; }
+.controls-section { padding-top:8px; }
+.controls-section .key-group { flex-wrap:nowrap; }
+.control-row kbd { min-width:20px;padding-inline:3px;font-size:10px; }
+.hero-sticker > svg:first-child { position:static;width:58px;height:58px;transform:none; }
+@media (max-height:960px) and (min-width:901px) {
+  .arena-dots { display:none; }
+  .mode-section,.difficulty-section,.arena-section,.appearance-picker { margin-top:8px; }
+  .extra-description { display:none; }
+}
+@media (min-height:961px) and (max-height:1100px) { .mission-card { display:none; } }
+@media (max-width:900px) and (min-height:501px) {
+  .game-sidebar { gap:6px 8px; }
+  .game-sidebar.extra-setup { gap:8px; }
+  .extra-setup .mode-help { margin-top:0; }
+}
+@media (max-height:500px) {
+  .game-sidebar { gap:0; }
+  .game-sidebar .arena-dots { display:none; }
+  .game-sidebar > section { margin:0 0 8px; }
+  .appearance-picker { margin-top:0; }
+  .appearance-picker legend { position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%); }
+  .skin-row { margin-bottom:2px; }
+  .game-sidebar.extra-setup { gap:6px; }
+  .extra-setup .mode-help { margin-top:auto; }
+}
+
+@media (max-height:500px) { .arena-section .section-label { display:none; } }

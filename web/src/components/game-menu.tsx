@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChevronDown, Moon, Sun, X } from "lucide-react";
 import { setTheme, useTheme } from "@/lib/theme";
 
-export function GameMenu({ currentMode, onOpen, children }: { currentMode?: "mango" | "hunter"; onOpen?: () => void; children?: ReactNode }) {
+export function GameMenu({ currentMode, onOpen, children }: { currentMode?: "fruit" | "hunter"; onOpen?: () => void; children?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const theme = useTheme();
@@ -66,7 +66,7 @@ export function GameMenu({ currentMode, onOpen, children }: { currentMode?: "man
       </div></fieldset>
       {notice && <p className="theme-notice" role="status">{notice}</p>}
       <div className="game-menu">
-        {currentMode !== "mango" && <Link href="/" onClick={() => close(false)}>Mango · escape the hunter</Link>}
+        {currentMode !== "fruit" && <Link href="/" onClick={() => close(false)}>Fruit · escape the hunter</Link>}
         {currentMode !== "hunter" && <Link href="/hunter" onClick={() => close(false)}>Hunter · control the snake</Link>}
         <Link href="/challenge" onClick={() => close(false)}>Local Challenges</Link>
         <Link href="/replays" onClick={() => close(false)}>Watch saved replays</Link>

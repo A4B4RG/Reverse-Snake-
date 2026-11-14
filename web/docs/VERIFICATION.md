@@ -1,5 +1,17 @@
 # Verification
 
+## Adaptive browser release 1.2.0 — 14 November 2026
+
+Final local production verification with Node 24 and installed Chrome passes **54 rules tests**, **53 browser tests** and one explicitly documented headless tab-visibility skip. ESLint, TypeScript, production build and the full dependency audit pass; audit reports zero vulnerabilities. The lockfile version changes to 1.2.0 without adding an ML/runtime dependency.
+
+Rules coverage proves actual backpropagation changes predictions and both opponent decisions, successful human actions train the correct policy, persisted weights survive/reject corruption, rectangular spawn/resize/capture rules hold, scaled solid islands cannot enclose inaccessible food, new neural/cosmetic/resize recordings reproduce final state, legacy recordings remain compatible, and paused playback is independent from the live state. Existing dash, boost, input, Hunter, Challenge, score and Wild Heart/Survival regressions remain covered.
+
+Browser coverage verifies full outer-rectangle Canvas sizing, larger fullscreen geometry, bottom-aligned desktop controls, every fruit/snake design, selections frozen during a match and retained in replays, cross-mode model persistence, blocked-storage learning retained across restart, early Hunter startup, full fruit ghost opacity below 45%, translucent 6 px blurred pause animation with frozen live progress, and the original twelve main-game viewport cases. Both themes and menus fit every route at desktop/phone/landscape sizes. Real key/touch ownership, reduced motion, boosts, results, verified replays, focus/fullscreen, offline loaded play and page/asset errors remain checked. The pause test waits for the renderer's next frame before sampling its frozen timestamp.
+
+Desktop, phone, both theme palettes, paused playback and fullscreen captures were visually inspected in screenshots/. Production sampling is described in PERFORMANCE.md. Physical devices, Firefox/Safari, external player balance and real headed tab visibility remain unverified; the existing blur-event pause wiring test passes. These local checks do not establish a deployed Vercel version.
+
+The existing [main verification workflow](https://github.com/A4B4RG/Reverse-Snake-/actions/workflows/verify.yml?query=branch%3Amain) runs clean installation, audit, rules, lint, build, types and browser checks on the pushed commit. Hosted Preview/production verification remains **NOT VERIFIED** under the user's explicit waiver recorded in RELEASE.md.
+
 ## Mango presentation cleanup — 14 November 2026
 
 ESLint, production build and TypeScript pass. The full Chrome browser suite passes **44 tests** with the existing headless tab-visibility skip. The desktop/phone/landscape viewport, fullscreen, menu, theme, replay and input checks remain passing after removal of the Mango tracking badge, side labels, board footer and setup captions. Contrast coverage now samples the remaining control text. Desktop screenshots in both themes, the phone layout and active close-call artwork were visually reviewed; the sticker's reduced text fits inside its oval. Rules and dependencies are unchanged. Hosted verification remains NOT VERIFIED under the existing waiver.

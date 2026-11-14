@@ -13,13 +13,11 @@ import {
 } from "lucide-react";
 import {
   ARENAS,
-  createGame,
   DIFFICULTIES,
   formatTime,
   STEP_MS,
   type Difficulty,
   type Direction,
-  type GameState,
 } from "@/lib/game";
 import { CHALLENGES } from "@/lib/challenge";
 import {
@@ -28,6 +26,9 @@ import {
   isHunter,
   Recorder,
   saveReplay,
+  readPreview,
+  savePreview,
+  type Replay,
   type Command,
   type RunMeta,
   type RunState,
@@ -41,21 +42,16 @@ import { GameInput, keyboardSource, movementDirection } from "@/lib/input";
 import { SnakeMark } from "./pixel-art";
 import { GameCanvas } from "./game-canvas";
 import { Modal } from "./modal";
+import { readLearning, saveLearning } from "@/lib/learning";
+import {
+  readAppearance,
+  saveAppearance,
+  type Appearance,
+} from "@/lib/appearance";
+import type { Board } from "@/lib/board";
+import { displayRun } from "@/lib/run-display";
+import { AppearancePicker } from "./appearance-picker";
 import { GameMenu } from "./game-menu";
-
-export function displayRun(s: RunState): GameState {
-  return isHunter(s)
-    ? {
-        ...createGame(s.arena, s.difficulty),
-        phase: s.phase === "ready" ? "running" : s.phase,
-        snake: s.snake,
-        snakeDirection: s.direction,
-        player: s.food ?? { x: -2, y: -2 },
-        score: s.score,
-        elapsed: s.elapsed,
-      }
-    : s;
-}
 export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
   const initial: RunMeta =
     mode === "hunter"
@@ -76,6 +72,8 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
   const displayRef = useRef(displayRun(state)),
     canvasRef = useRef<HTMLCanvasElement>(null),
     arcadeRef = useRef<HTMLElement>(null);
+  const preferencesLoaded = useRef(false);
+  const previewRef = useRef<Replay | null>(null);
   const recorder = useRef<Recorder | null>(null),
     input = useRef(new GameInput());
   const [meta, setMeta] = useState(initial),
@@ -98,6 +96,8 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
     (s: RunState) => {
       const replay = recorder.current?.finish(s);
       recorder.current = null;
+      saveLearning(s.learning);
+      if (replay) savePreview(replay);
       const stored = recordExtra(s, metaRef.current),
         replayStored = !replay || saveReplay(replay);
       if (!stored || !replayStored)
@@ -121,15 +121,40 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
     },
     [publish, complete],
   );
+  const loadPreferences = useCallback(() => {
+    if (preferencesLoaded.current) return;
+    preferencesLoaded.current = true;
+    metaRef.current = {
+      ...metaRef.current,
+      board: stateRef.current.board,
+      appearance: readAppearance(),
+      learning: readLearning(),
+    };
+    publish({ ...createRun(metaRef.current), phase: "ready" });
+  }, [publish]);
   const start = useCallback(() => {
+    loadPreferences();
     input.current.clear();
+    saveLearning(stateRef.current.learning);
+    metaRef.current = {
+      ...metaRef.current,
+      board: stateRef.current.board,
+      appearance: stateRef.current.appearance,
+      learning: stateRef.current.learning,
+    };
     recorder.current = new Recorder(metaRef.current);
     publish(createRun(metaRef.current));
     focus();
-  }, [publish, focus]);
+  }, [publish, focus, loadPreferences]);
   const pause = useCallback(() => {
     if (stateRef.current.phase === "running") {
       input.current.clear();
+      previewRef.current =
+        readPreview() ??
+        recorder.current?.finish(stateRef.current, true) ??
+        null;
+      savePreview(recorder.current?.finish(stateRef.current, true) ?? null);
+      saveLearning(stateRef.current.learning);
       command({ action: "pause" });
     }
   }, [command]);
@@ -169,6 +194,12 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
       stateRef.current.phase === "paused"
     )
       return;
+    m = {
+      ...m,
+      board: stateRef.current.board,
+      appearance: stateRef.current.appearance,
+      learning: stateRef.current.learning,
+    };
     metaRef.current = m;
     setMeta(m);
     recorder.current = null;
@@ -179,11 +210,13 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
       previous = 0,
       accumulator = 0,
       lastUi = 0,
-      loaded = false;
+      loaded = false,
+      lastLearningSave = 0;
     const animate = (now: number) => {
       if (!loaded) {
         loaded = true;
         setRecords(readExtraRecords());
+        loadPreferences();
       }
       const delta = previous ? Math.min(200, now - previous) : 0;
       previous = now;
@@ -207,10 +240,23 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
           lastUi = now;
         }
       } else accumulator = 0;
+      if (
+        stateRef.current.phase === "running" &&
+        now - lastLearningSave > 2000
+      ) {
+        saveLearning(stateRef.current.learning);
+        lastLearningSave = now;
+      }
       frame = requestAnimationFrame(animate);
     };
     const down = (e: KeyboardEvent) => {
-      if (document.querySelector(".menu-panel") || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (
+        document.querySelector(".menu-panel") ||
+        e.ctrlKey ||
+        e.metaKey ||
+        e.altKey
+      )
+        return;
       if ((e.target as HTMLElement).closest("dialog")) return;
       if (e.key === "Escape") {
         e.preventDefault();
@@ -252,13 +298,48 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
     window.addEventListener("blur", pause);
     document.addEventListener("visibilitychange", hidden);
     return () => {
+      saveLearning(stateRef.current.learning);
+      savePreview(recorder.current?.finish(stateRef.current, true) ?? null);
       cancelAnimationFrame(frame);
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
       window.removeEventListener("blur", pause);
       document.removeEventListener("visibilitychange", hidden);
     };
-  }, [complete, pause, resume, start, press, release, dash, mode]);
+  }, [
+    complete,
+    pause,
+    resume,
+    start,
+    press,
+    release,
+    dash,
+    mode,
+    publish,
+    loadPreferences,
+  ]);
+  const resize = useCallback(
+    (board: Board) => {
+      if (
+        stateRef.current.board.columns === board.columns &&
+        stateRef.current.board.rows === board.rows
+      )
+        return;
+      metaRef.current = { ...metaRef.current, board };
+      command({ action: "resize", board });
+    },
+    [command],
+  );
+  const appearance = (appearance: Appearance) => {
+    if (
+      stateRef.current.phase === "running" ||
+      stateRef.current.phase === "paused"
+    )
+      return;
+    saveAppearance(appearance);
+    metaRef.current = { ...metaRef.current, appearance };
+    publish({ ...stateRef.current, appearance });
+  };
   const active = state.phase === "running" || state.phase === "paused";
   const challenge = CHALLENGES.find((c) => c.id === meta.challenge);
   const matching = records.filter(
@@ -291,13 +372,26 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
           </span>
         </Link>
         <nav className="mode-nav" aria-label="Game navigation">
-          <Link href="/">Mango</Link>
+          <Link href="/">Fruit</Link>
           <Link href={mode === "hunter" ? "/challenge" : "/hunter"}>
             {mode === "hunter" ? "Challenges" : "Hunter"}
           </Link>
           <Link href="/replays">Replays</Link>
         </nav>
-        <GameMenu currentMode={mode === "hunter" ? "hunter" : undefined} onOpen={pause}><button data-menu-close onClick={() => { pause(); setHelp(true); }}>How to play</button></GameMenu>
+        <GameMenu
+          currentMode={mode === "hunter" ? "hunter" : undefined}
+          onOpen={pause}
+        >
+          <button
+            data-menu-close
+            onClick={() => {
+              pause();
+              setHelp(true);
+            }}
+          >
+            How to play
+          </button>
+        </GameMenu>
       </header>
       <main className="site-main">
         <section className="hero">
@@ -308,8 +402,8 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
             </h1>
             <p>
               {mode === "hunter"
-                ? "Collect mangoes. Grow your snake. Keep a turn in reserve."
-                : "Fixed local courses. The same chase on every attempt."}
+                ? "Catch the fruit. It learns how to escape."
+                : "Timed courses on your screen’s board."}
             </p>
           </div>
         </section>
@@ -359,6 +453,8 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
               <GameCanvas
                 gameRef={displayRef}
                 canvasRef={canvasRef}
+                previewRef={previewRef}
+                onResize={resize}
                 ariaLabel={
                   mode === "hunter"
                     ? "Hunter playing field. Arrow keys or WASD turn your snake, Escape pauses."
@@ -366,14 +462,16 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
                 }
               />
               {state.phase !== "running" && (
-                <div className="board-overlay state-overlay">
+                <div
+                  className={`board-overlay state-overlay ${state.phase === "paused" ? "pause-overlay" : ""}`}
+                >
                   <h2>
                     {state.phase === "ready"
                       ? mode === "hunter"
                         ? "Your hunt."
                         : challenge?.name
                       : state.phase === "paused"
-                        ? "Snack break."
+                        ? "Paused."
                         : state.phase === "won"
                           ? "Sweet success."
                           : "Try another turn."}
@@ -381,7 +479,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
                   <p>
                     {state.phase === "ready"
                       ? mode === "hunter"
-                        ? "You control the snake. Collect mangoes and avoid every wall, stone and body cell."
+                        ? "You control the snake. Collect fruit and avoid every wall, stone and body cell."
                         : `Stay uneaten for ${challenge!.target / 1000} seconds. Dash and close calls work as in Survival.`
                       : state.phase === "paused"
                         ? "The board is frozen."
@@ -402,6 +500,11 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
                     <button
                       className="text-button"
                       onClick={() => {
+                        savePreview(
+                          recorder.current?.finish(stateRef.current, true) ??
+                            null,
+                        );
+                        saveLearning(stateRef.current.learning);
                         recorder.current = null;
                         input.current.clear();
                         publish({
@@ -421,7 +524,9 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
                 {ARENAS[meta.arena].name} ·{" "}
                 {mode === "hunter" ? "Player snake" : "Local challenge"}
               </span>
-              <span>20 × 20</span>
+              <span>
+                {state.board.columns} × {state.board.rows}
+              </span>
             </div>
             <div className="touch-controls">
               <div className="d-pad">
@@ -480,6 +585,11 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
             </div>
           </section>
           <aside className="game-sidebar extra-setup" aria-label="Round setup">
+            <AppearancePicker
+              value={state.appearance}
+              disabled={active}
+              onChange={appearance}
+            />
             {mode === "hunter" ? (
               <>
                 <label>
@@ -546,7 +656,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
             <div className="extra-description">
               <p>
                 {mode === "hunter"
-                  ? "Arrow keys / WASD turn. The snake keeps moving. Queue up to two corners. You cannot reverse. Each mango grows your snake and earns 100 points × difficulty. Fill the free board to win."
+                  ? "Arrow keys / WASD turn. The snake keeps moving. Queue up to two corners. You cannot reverse. Each fruit grows your snake and earns 100 points × difficulty. Fill the free board to win."
                   : `${DIFFICULTIES[meta.difficulty].label} · ${ARENAS[meta.arena].name}. Hold arrows / WASD to move; Space dashes. Capture loses. Reach the timer to win. Compare time, then close calls on this course.`}
               </p>
               <p>
@@ -598,8 +708,8 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
         >
           <p className="modal-intro">
             {mode === "hunter"
-              ? "Use arrow keys, WASD or touch directions to turn your snake. It keeps moving. Queue up to two corners; reversals are rejected. Eat mangoes for one extra cell and 100 points × difficulty. Avoid walls, stones and your body. The departing tail cell is safe unless growing. Fill the available board to win."
-              : `Survive ${challenge?.target ? challenge.target / 1000 : 0} seconds in ${ARENAS[meta.arena].name}. Arrow keys / WASD or held touch directions move your mango; Space or Dash moves three cells. Capture loses. Snake crashes respawn a hunter. Close calls give a five-second speed boost. This local course has the same setup and seed on every attempt.`}
+              ? "Use arrow keys, WASD or touch directions to turn your snake. It keeps moving. Queue up to two corners; reversals are rejected. Eat fruit for one extra cell and 100 points × difficulty. Avoid walls, stones and your body. The departing tail cell is safe unless growing. Fill the available board to win."
+              : `Survive ${challenge?.target ? challenge.target / 1000 : 0} seconds in ${ARENAS[meta.arena].name}. Arrow keys / WASD or held touch directions move your fruit; Space or Dash moves three cells. Capture loses. Snake crashes respawn a hunter. Close calls give a five-second speed boost. This local course has the same course and seed on every attempt.`}
           </p>
           <p className="modal-intro">
             Esc pauses · Enter starts/resumes · R restarts. Your round pauses
@@ -612,7 +722,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
                 ? `${best.score} points`
                 : `${formatTime(best.elapsed)} · ${best.closeCalls} close calls`
               : "Finish your first run."}{" "}
-            Results stay in this browser, separately from mango scores.
+            Results stay in this browser, separately from escape scores.
           </p>
         </Modal>
       )}

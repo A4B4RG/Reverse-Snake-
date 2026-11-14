@@ -1,12 +1,12 @@
 # 🐍 Reverse Snake
 
-The active application is the browser edition in `web/`. The Python/Kivy files are preserved as the original desktop prototype. Current project status is documented in [PROJECT_STATUS.md](PROJECT_STATUS.md).
+The active application is the browser edition in `web/`. The Python/Kivy files are preserved as the original desktop prototype. The current browser scenario is documented in [CURRENT_STATE.md](web/docs/CURRENT_STATE.md); [PROJECT_STATUS.md](PROJECT_STATUS.md) is preserved as a historical progress snapshot.
 
 [Play the deployed game](https://reverse-snake-chi.vercel.app) · [GitHub repository](https://github.com/A4B4RG/Reverse-Snake-)
 
 ## Browser edition
 
-A complete **React + Next.js + Tailwind CSS** version is now available in [`web/`](web/README.md), with a deep-canopy jungle theme, five arenas, endless Survival, three difficulties, close-call speed boosts, keyboard/touch controls, dash, pause/resume, sound, and saved local scores.
+A complete **React + Next.js + Tailwind CSS** version is now available in [`web/`](web/README.md), with flexible boards filling the outer play area, a larger fullscreen field, trainable local fruit/snake opponents, five fruit skins, four snake designs, Levels, Survival, Hunter, timed Challenges, replays, translucent animated pause, light/dark themes and keyboard/touch controls.
 
 ```powershell
 cd web

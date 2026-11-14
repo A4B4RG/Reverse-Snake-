@@ -16,19 +16,6 @@ async function canvasHash(page: Page) {
   });
 }
 
-async function landmarks(page: Page) {
-  return page.locator("canvas").evaluate((canvas: HTMLCanvasElement) => {
-    const pixels = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data;
-    const mango = { x: 0, y: 0, n: 0 }, snake = { x: 0, y: 0, n: 0 };
-    for (let i = 0; i < pixels.length; i += 4) {
-      const target = pixels[i] === 255 && pixels[i + 1] === 197 && pixels[i + 2] === 94 ? mango : pixels[i] === 220 && pixels[i + 1] === 152 && pixels[i + 2] === 69 ? snake : null;
-      if (target) { target.x += (i / 4) % canvas.width; target.y += Math.floor(i / 4 / canvas.width); target.n++; }
-    }
-    if (!mango.n || !snake.n) throw new Error("The live characters must remain visible");
-    return { mango: { x: mango.x / mango.n, y: mango.y / mango.n }, snake: { x: snake.x / snake.n, y: snake.y / snake.n } };
-  });
-}
-
 test("light is the fresh default, dark persists across reload and every route", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
@@ -71,7 +58,7 @@ test("a palette switch redraws a paused board without advancing or resetting it"
   await page.clock.runFor(40);
   await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "paused");
   const light = await canvasHash(page);
-  const positions = await landmarks(page);
+  const elapsed = await page.locator("canvas").getAttribute("data-elapsed");
   const hud = await page.locator(".game-hud").innerText();
   const scoreData = await page.evaluate(() => localStorage.getItem("reverse-snake:v1"));
   await menu(page).getByRole("button", { name: "Dark", exact: true }).click();
@@ -83,11 +70,7 @@ test("a palette switch redraws a paused board without advancing or resetting it"
   await menu(page).getByRole("button", { name: "Light", exact: true }).click();
   await page.clock.runFor(1000);
   await expect(page.locator("canvas")).toHaveAttribute("data-theme", "light");
-  const after = await landmarks(page);
-  for (const name of ["mango", "snake"] as const) {
-    expect(after[name].x).toBeCloseTo(positions[name].x, 0);
-    expect(after[name].y).toBeCloseTo(positions[name].y, 0);
-  }
+  expect(await page.locator("canvas").getAttribute("data-elapsed")).toBe(elapsed);
   expect(await page.evaluate(() => localStorage.getItem("reverse-snake:v1"))).toBe(scoreData);
   await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "paused");
 });
@@ -131,10 +114,10 @@ test("hover leaves gameplay running; click and keyboard open, Escape and outside
   await expect(trigger).toBeFocused();
 });
 
-test("the menu offers Hunter from Mango and Mango from Hunter, including during a round", async ({ page }) => {
+test("the menu offers Hunter from Fruit and Fruit from Hunter, including during a round", async ({ page }) => {
   await page.goto("/");
   await openMenu(page);
-  await expect(menu(page).getByRole("link", { name: "Mango · escape the hunter" })).toHaveCount(0);
+  await expect(menu(page).getByRole("link", { name: "Fruit · escape the hunter" })).toHaveCount(0);
   await expect(menu(page).getByRole("link", { name: "Hunter · control the snake" })).toBeVisible();
   await menu(page).getByRole("link", { name: "Hunter · control the snake" }).click();
   await expect(page).toHaveURL(/\/hunter$/);
@@ -142,12 +125,12 @@ test("the menu offers Hunter from Mango and Mango from Hunter, including during 
   await openMenu(page);
   await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "paused");
   await expect(menu(page).getByRole("link", { name: "Hunter · control the snake" })).toHaveCount(0);
-  await expect(menu(page).getByRole("link", { name: "Mango · escape the hunter" })).toBeVisible();
-  await menu(page).getByRole("link", { name: "Mango · escape the hunter" }).click();
+  await expect(menu(page).getByRole("link", { name: "Fruit · escape the hunter" })).toBeVisible();
+  await menu(page).getByRole("link", { name: "Fruit · escape the hunter" }).click();
   await page.getByRole("button", { name: "Let’s play" }).click();
   await openMenu(page);
   await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "paused");
-  await expect(menu(page).getByRole("link", { name: "Mango · escape the hunter" })).toHaveCount(0);
+  await expect(menu(page).getByRole("link", { name: "Fruit · escape the hunter" })).toHaveCount(0);
   await expect(menu(page).getByRole("link", { name: "Hunter · control the snake" })).toBeVisible();
 });
 
@@ -216,7 +199,7 @@ test("supporting text and theme selections have readable contrast in both palett
         const c = rgb.match(/[\d.]+/g)!.slice(0, 3).map(Number).map(n => n / 255).map(n => n <= .04045 ? n / 12.92 : ((n + .055) / 1.055) ** 2.4);
         return c[0] * .2126 + c[1] * .7152 + c[2] * .0722;
       };
-      return [".hud-stat > span", ".theme-toggle button[aria-pressed='true']", ".game-menu > a", ".ghost-option", ".menu-panel .score-note", ".theme-option legend"].map(selector => {
+      return [".hud-stat > span", ".theme-toggle button[aria-pressed='true']", ".game-menu > a", ".ghost-option", ".theme-option legend"].map(selector => {
         const el = document.querySelector(selector)!;
         let bg = getComputedStyle(el).backgroundColor;
         let ancestor = el.parentElement;

@@ -19,7 +19,8 @@ for (const [width, height] of viewports) {
     expect(size.height).toBeLessThanOrEqual(height);
     const board = (await page.locator("canvas").boundingBox())!;
     expect(board.width).toBeGreaterThanOrEqual(170);
-    expect(Math.abs(board.width - board.height)).toBeLessThan(1);
+    const outer=(await page.locator(".board-stage").boundingBox())!;
+    expect(board.width).toBeCloseTo(outer.width,0);expect(board.height).toBeCloseTo(outer.height,0);
     expect(board.y).toBeGreaterThanOrEqual(0);
     expect(board.y + board.height).toBeLessThanOrEqual(height);
     for (const selector of [".difficulty-options button", ".arena-arrows button", ".dark-icon-button"]) {

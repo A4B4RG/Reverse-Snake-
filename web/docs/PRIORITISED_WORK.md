@@ -12,6 +12,6 @@ The complete-build specification supplied on 14 November governs scope. Existing
 | Quality | Accessibility and lifecycle | Keyboard labels, native modal focus, touch sizes and targeted contrast checked. Expand navigation, fullscreen and suspension checks. Full screen-reader audit pending. |
 | Measured | Performance | Production Canvas measurements and raw JSON recorded; physical-device/long-session profiling remains future validation. |
 | External | Human balance and physical-device validation | Checklist prepared. No invented tester or phone results; pending genuine access. |
-| Conditional | Phaser / online / editor / Android / ML | Deferred for the concrete reasons in TECHNICAL_DECISIONS.md. No speculative infrastructure. |
+| Conditional | Phaser / online / editor / Android | Deferred for the concrete reasons in TECHNICAL_DECISIONS.md. No speculative infrastructure. |
 
-Do not tune the established mango score, speed, lunge or arena rules from a single unverified preference. New mode balance remains a subject for the prepared controlled playtest.
+The explicit adaptive-gameplay request is implemented: flexible boards, both neural policies, bottom-aligned desktop controls, full fruit ghosts, animated blurred pause and selectable fruit/snake skins. Score multipliers remain unchanged. Adaptive balance remains a subject for real playtesting.

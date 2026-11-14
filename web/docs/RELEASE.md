@@ -1,5 +1,17 @@
 # Release evidence
 
+## Adaptive browser release 1.2.0 — 14 November 2026
+
+This release replaces the fixed square playfield with full outer-rectangle geometry and a larger fullscreen board, adds local trainable fruit/snake opponents, bottom-aligned desktop controls, full fruit ghosts at 32% opacity, independent recorded gameplay behind translucent blurred pause, and five fruit/four snake appearances selected before matches. Apple/Jade are the fresh defaults; the presentation is fruit-neutral. Old scores and canopy-2 replay playback are retained. New recordings capture geometry, cosmetics, initial neural snapshots and resize commands.
+
+Local production checks pass: **54 rules tests**, **53 browser passes** and one existing explicit headless visibility skip, lint, build, typecheck and zero-findings full audit. Final captures and production measurements accompany this release. See VERIFICATION.md for the coverage and PERFORMANCE.md for the measured limits.
+
+Repository: https://github.com/A4B4RG/Reverse-Snake-, branch **main**. Pre-update rollback checkpoint: `1d6eaaee31140e078e06cd736ca552c4e2435e9a`. This delivery includes the complete source/tests, current scenario reports, evidence/screenshots and preserved root PROJECT_STATUS.md. The [main verification workflow](https://github.com/A4B4RG/Reverse-Snake-/actions/workflows/verify.yml?query=branch%3Amain) identifies the exact pushed source and its clean-install/Linux checks.
+
+The user previously authorized pushing all work to GitHub main and explicitly instructed **“Push main; document hosted verification gap.”** Updated Vercel Preview/production browser gameplay remains **NOT VERIFIED**. The earlier denied access was not bypassed. A main push or CI success does not establish the deployment currently served by https://reverse-snake-chi.vercel.app. Use the existing integration and a reviewed revert to the checkpoint for source rollback; no force-push, backend migration or replacement hosting project is required. A revert does not restore cleared browser-local learning, scores or replays.
+
+The sections below preserve earlier release evidence.
+
 ## Mango presentation cleanup — 14 November 2026
 
 The main Mango board omits the tracking badge, vertical side slogans and bottom status/arena footer. Mode/difficulty captions are removed, dash readiness is concise, and the sticker uses smaller bounded text. Current screenshots and product/visual reports include the updated layout.

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { createGame, formatTime } from "@/lib/game";
 import { readReplays, ReplayCursor, type Replay } from "@/lib/replay";
 import { GameCanvas } from "./game-canvas";
-import { displayRun } from "./new-game";
+import { displayRun } from "@/lib/run-display";
 import { SnakeMark } from "./pixel-art";
 import { GameMenu } from "./game-menu";
 
@@ -100,7 +100,7 @@ export default function ReplayViewer() {
           </span>
         </Link>
         <nav className="mode-nav" aria-label="Game navigation">
-          <Link href="/">Mango</Link>
+          <Link href="/">Fruit</Link>
           <Link href="/hunter">Hunter</Link>
           <Link href="/challenge">Challenges</Link>
         </nav>
@@ -177,7 +177,7 @@ export default function ReplayViewer() {
                 freezes when you leave the tab.
               </p>
               <p>
-                For a mango ghost, enable the option in the main game menu
+                For a fruit ghost, enable the option in the main game menu
                 before starting a matching round.
               </p>
             </div>
