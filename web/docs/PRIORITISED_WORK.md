@@ -5,6 +5,7 @@ The complete-build specification supplied on 14 November governs scope. Existing
 | Priority | Work | State and completion evidence |
 | --- | --- | --- |
 | Delivered | Wild Heart Levels idle-start defect | Fixed; all 30 idle rules cases and three real browser difficulty regressions pass. Hosted check waived by the user. |
+| Delivered | Saved named character choices, ten maps and mobile gestures | One Menu option pair persists; score gates unlock successive Levels maps. Complex wall footprints retain fullscreen density. Swipes steer; double-tap dashes; there is no touch pad or Dash button. Rules and real-input progression checks pass. |
 | Delivered | Single viewport | Final main-layout checks pass at 12 viewport sizes; Hunter/Challenge phone and short-landscape checks also pass. |
 | Delivered | Hunter / local Challenge / replay | Implemented behind separate routes; rules, storage, replay/ghost and browser checks pass. |
 | Delivered | Security / generated caches / CI | Zero full audit findings; bytecode untracked and preserved. Real Linux GitHub CI passes after correcting the privileged test port. |
@@ -14,4 +15,4 @@ The complete-build specification supplied on 14 November governs scope. Existing
 | External | Human balance and physical-device validation | Checklist prepared. No invented tester or phone results; pending genuine access. |
 | Conditional | Phaser / online / editor / Android | Deferred for the concrete reasons in TECHNICAL_DECISIONS.md. No speculative infrastructure. |
 
-The explicit adaptive-gameplay request is implemented: flexible boards, both neural policies, desktop controls directly beneath the game frame, full fruit ghosts, animated blurred pause and selectable fruit/snake skins. The main hero heading and spacing are reduced. Score multipliers remain unchanged. Adaptive balance remains a subject for real playtesting.
+The explicit adaptive-gameplay request is implemented: flexible boards, both neural policies, desktop controls directly beneath the game frame, full fruit ghosts, animated blurred pause and selectable fruit/snake skins. The main hero heading and spacing are reduced. Difficulty multipliers remain 1 / 1.5 / 2; Levels scoring now uses moved cells and score gates. ONLINE_PVP.md explains the proposed realtime service and optional domain; no online infrastructure is implemented. Adaptive balance remains a subject for real playtesting.

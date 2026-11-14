@@ -23,7 +23,7 @@ export default function ReplayViewer() {
     selected.current = index;
     setSelection(index);
     cursor.current = new ReplayCursor(replay);
-    gameRef.current = displayRun(cursor.current.state);
+    gameRef.current = displayRun(cursor.current.state, replay.ruleset);
     playRef.current = false;
     setPlaying(false);
     setElapsed(0);
@@ -47,7 +47,7 @@ export default function ReplayViewer() {
       if (playRef.current && cursor.current) {
         accumulator += delta;
         while (accumulator >= 20 && !cursor.current.done) {
-          gameRef.current = displayRun(cursor.current.advance());
+          gameRef.current = displayRun(cursor.current.advance(), cursor.current.replay.ruleset);
           accumulator -= 20;
         }
         if (cursor.current.done) {

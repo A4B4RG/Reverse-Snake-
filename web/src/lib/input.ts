@@ -2,6 +2,11 @@ import type { Direction } from "./game";
 
 const KEYS: Record<string, Direction> = { arrowup: "up", w: "up", arrowright: "right", d: "right", arrowdown: "down", s: "down", arrowleft: "left", a: "left" };
 export const movementDirection = (key: string): Direction | null => KEYS[key.toLowerCase()] ?? null;
+export function swipeDirection(dx: number, dy: number): Direction | null {
+  const x = Math.abs(dx), y = Math.abs(dy);
+  if (Math.max(x, y) < 24 || Math.max(x, y) < Math.min(x, y) * 1.2) return null;
+  return x > y ? dx > 0 ? "right" : "left" : dy > 0 ? "down" : "up";
+}
 // Physical identity stays stable when Shift changes, while direction follows
 // the printed WASD key on the user's keyboard layout.
 export const keyboardSource = (event: { key: string; code: string }): string => `key:${event.code || event.key.toLowerCase()}`;

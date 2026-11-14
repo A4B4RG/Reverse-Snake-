@@ -1,5 +1,17 @@
 # Verification
 
+## Maps, saved choices and swipe controls — 14 November 2026
+
+Version 1.3.0 / orchard-4 passes **59 rules tests**, production build, ESLint, TypeScript and full dependency audit with **zero vulnerabilities**. Dependency versions are unchanged; package and lockfile version fields are 1.3.0.
+
+The full Chrome production suite verified 54 cases with one existing visibility skip and one new fullscreen assertion failure: clientWidth excludes the two border pixels, while the assertion expected the full viewport width. The assertion now measures the outer bounding box. A final six-case production rerun passes the corrected all-ten-map/fullscreen check, all four swipe directions with continuing movement and double-tap dash, pause clearing motion, real movement reaching a target and persisting its next-map unlock, main layout/contrast, and Hunter/Challenge phone/landscape controls/help. Together all **55 runnable browser cases** are verified; the unchanged genuine-tab-visibility case remains explicitly skipped in headless Chrome. The separate blur-event test passes.
+
+Rules checks include increasing targets, wall density preservation in fullscreen, all-map connected/legal spawns and resizing, score-gated unlock persistence, no idle/blocked points, capture precedence, gesture thresholds and old orchard-3/canopy-2 playback. Existing model, boost, input, survival routing, Hunter, Challenge and replay coverage remains passing. Old replay rendering uses its recorded terrain rules.
+
+Current phone layouts, named character options in Menu, desktop guide placement, both palettes, pause and Crown Maze fullscreen were visually reviewed from local production captures. The twelve main-game viewport cases and all-route theme/phone/landscape cases pass. Physical devices and Safari/Firefox remain unverified. Hosted Vercel verification remains **NOT VERIFIED** under the existing user waiver. The [main workflow](https://github.com/A4B4RG/Reverse-Snake-/actions/workflows/verify.yml?query=branch%3Amain) runs the entire suite against the exact delivered commit on Linux.
+
+The sections below preserve prior verification evidence.
+
 ## Controls beneath the map — 14 November 2026
 
 Production build, ESLint and TypeScript pass. The 21 targeted Chrome browser checks pass: all twelve main-game viewport sizes, guide placement below and aligned with the game frame, larger fullscreen geometry, both theme/menu palettes across all routes, text contrast, animated paused playback, and Wild Heart idle/chase regressions. The existing placement assertion now checks the game frame instead of the sidebar. Updated local desktop, phone, both-theme, pause and fullscreen screenshots were visually inspected. Gameplay rules and dependencies are unchanged; hosted Vercel verification remains NOT VERIFIED under the existing waiver.

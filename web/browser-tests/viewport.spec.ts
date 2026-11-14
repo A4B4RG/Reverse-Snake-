@@ -25,6 +25,7 @@ for (const [width, height] of viewports) {
     expect(board.y + board.height).toBeLessThanOrEqual(height);
     for (const selector of [".difficulty-options button", ".arena-arrows button", ".dark-icon-button"]) {
       for (const button of await page.locator(selector).all()) {
+        if (!await button.isVisible()) continue;
         const box = (await button.boundingBox())!;
         expect(box.width).toBeGreaterThanOrEqual(44);
         expect(box.height).toBeGreaterThanOrEqual(44);

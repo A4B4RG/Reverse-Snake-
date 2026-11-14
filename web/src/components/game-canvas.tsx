@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useRef, type RefObject } from "react";
-import type { GameState } from "@/lib/game";
+import { useEffect, useRef, type RefObject, type PointerEvent } from "react";
+import type { Direction, GameState } from "@/lib/game";
+import { swipeDirection } from "@/lib/input";
 import { boardForSize, type Board } from "@/lib/board";
 import { renderGame } from "@/lib/render-game";
 import {
@@ -19,6 +20,8 @@ export function GameCanvas({
   previewRef,
   onResize,
   ariaLabel,
+  onSwipe,
+  onDash,
 }: {
   gameRef: RefObject<GameState>;
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -26,7 +29,19 @@ export function GameCanvas({
   previewRef?: RefObject<Replay | null>;
   onResize?: (b: Board) => void;
   ariaLabel?: string;
+  onSwipe?: (d: Direction) => void;
+  onDash?: () => void;
 }) {
+  const gesture = useRef<{ id: number; x: number; y: number; moved: boolean } | null>(null);
+  const lastTap = useRef<number | null>(null);
+  const lastSwipe = useRef<Direction | null>(null);
+  const lastElapsed = useRef(0);
+  const moveGesture = (event: PointerEvent<HTMLCanvasElement>) => {
+    const g = gesture.current;
+    if (!g || g.id !== event.pointerId || g.moved || gameRef.current.phase !== "running") return;
+    const d = swipeDirection(event.clientX - g.x, event.clientY - g.y);
+    if (d) { g.moved = true; lastTap.current = null; lastSwipe.current = d; onSwipe?.(d); }
+  };
   const theme = useTheme(),
     themeRef = useRef(theme),
     resizeRef = useRef(onResize);
@@ -68,6 +83,9 @@ export function GameCanvas({
       const live = gameRef.current,
         dpr = Math.min(window.devicePixelRatio || 1, 2),
         theme = themeRef.current;
+      if (live.phase !== "running") { gesture.current = null; lastTap.current = null; }
+      if (["ready", "won", "lost"].includes(live.phase) || live.elapsed < lastElapsed.current) lastSwipe.current = null;
+      lastElapsed.current = live.elapsed;
       if (live.phase === "paused" && !paused) {
         source =
           previewRef?.current ?? readPreview() ?? readReplays()[0] ?? null;
@@ -85,7 +103,7 @@ export function GameCanvas({
         }
       }
       previous = now;
-      const game = pauseCursor ? displayRun(pauseCursor.state) : live,
+      const game = pauseCursor ? displayRun(pauseCursor.state, pauseCursor.replay.ruleset) : live,
         ghost = paused ? null : ghostRef?.current;
       const resized =
         width !== lastWidth || height !== lastHeight || dpr !== lastDpr;
@@ -156,8 +174,28 @@ export function GameCanvas({
       role="application"
       aria-label={
         ariaLabel ??
-        "Reverse Snake playing field. Hold arrow keys or WASD to move the fruit, Space to dash, Escape to pause."
+        "Reverse Snake playing field. Swipe to steer, double-tap to dash. Arrow keys or WASD also move; Space dashes, Escape pauses."
       }
+      onPointerDown={event => {
+        if (!onSwipe || gameRef.current.phase !== "running" || gesture.current || !["touch", "pen"].includes(event.pointerType)) return;
+        event.preventDefault();
+        event.currentTarget.setPointerCapture(event.pointerId);
+        gesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
+      }}
+      onPointerMove={moveGesture}
+      onPointerUp={event => {
+        const g = gesture.current;
+        if (!g || g.id !== event.pointerId) return;
+        moveGesture(event);
+        if (!g.moved && gameRef.current.phase === "running" && Math.hypot(event.clientX - g.x, event.clientY - g.y) < 12) {
+          const now = Date.now();
+          if (lastTap.current !== null && now - lastTap.current < 300) { if (lastSwipe.current) onDash?.(); lastTap.current = null; }
+          else lastTap.current = now;
+        }
+        gesture.current = null;
+      }}
+      onPointerCancel={() => { gesture.current = null; lastTap.current = null; }}
+      onLostPointerCapture={() => { gesture.current = null; }}
     />
   );
 }

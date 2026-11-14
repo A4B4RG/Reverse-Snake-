@@ -1,9 +1,9 @@
 import { ARENAS, type Difficulty, type GameMode, type GameState } from "./game";
 
 export type Run = { id: string; arena: number; difficulty: Difficulty; mode: GameMode; closeCalls: number; score: number; elapsed: number; won: boolean; date: string };
-export type SavedData = { sound: boolean; difficulty: Difficulty; runs: Run[]; attempts: number; wins: number; best: number };
+export type SavedData = { sound: boolean; difficulty: Difficulty; runs: Run[]; attempts: number; wins: number; best: number; unlocked: number };
 const KEY = "reverse-snake:v1";
-export const DEFAULT_DATA: SavedData = { sound: true, difficulty: "normal", runs: [], attempts: 0, wins: 0, best: 0 };
+export const DEFAULT_DATA: SavedData = { sound: true, difficulty: "normal", runs: [], attempts: 0, wins: 0, best: 0, unlocked: 0 };
 const validDifficulty = (v: unknown): v is Difficulty => v === "easy" || v === "normal" || v === "hard";
 const nonnegative = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v) && v >= 0;
 
@@ -17,6 +17,7 @@ export function readSavedData(): SavedData {
       difficulty: validDifficulty(data.difficulty) ? data.difficulty : "normal",
       runs, attempts: nonnegative(data.attempts) ? data.attempts : 0,
       wins: nonnegative(data.wins) ? data.wins : 0, best: nonnegative(data.best) ? data.best : 0,
+      unlocked: Number.isInteger(data.unlocked) && data.unlocked >= 0 && data.unlocked < ARENAS.length ? data.unlocked : Math.min(ARENAS.length - 1, runs.reduce((n: number, r: Run) => r.mode === "levels" && r.won ? Math.max(n, r.arena + 1) : n, 0)),
     };
   } catch { return { ...DEFAULT_DATA }; }
 }
@@ -37,5 +38,6 @@ export function recordRun(data: SavedData, game: GameState): SavedData {
     id: runId(), arena: game.arena, difficulty: game.difficulty, mode: game.mode, closeCalls: game.closeCalls,
     score: Math.floor(game.score), elapsed: game.elapsed, won: game.phase === "won", date: new Date().toISOString(),
   };
-  return { ...data, runs: [run, ...data.runs].slice(0, 30), attempts: data.attempts + 1, wins: data.wins + Number(run.won), best: Math.max(data.best, run.score) };
+  const cleared = game.mode === "levels" && run.won && game.reason === "target" && run.score >= ARENAS[game.arena].scoreTarget && game.arena <= data.unlocked;
+  return { ...data, runs: [run, ...data.runs].slice(0, 30), attempts: data.attempts + 1, wins: data.wins + Number(run.won), best: Math.max(data.best, run.score), unlocked: cleared ? Math.max(data.unlocked, Math.min(ARENAS.length - 1, game.arena + 1)) : data.unlocked };
 }

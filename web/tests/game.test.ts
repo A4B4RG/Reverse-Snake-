@@ -34,30 +34,31 @@ test("every arena and difficulty catches idle food in both modes without an auto
     for (const arena of ARENAS.keys()) {
       for (const difficulty of Object.keys(DIFFICULTIES) as Difficulty[]) {
         let game: GameState = { ...createGame(arena, difficulty, mode), phase: "running" };
+        const initialPlayer = game.player;
         for (let i = 0; i < 1500 && game.phase === "running"; i++) game = step(game, null);
         const label = `${ARENAS[arena].name}, ${difficulty}, ${mode}`;
         assert.equal(game.phase, "lost", label);
         assert.equal(game.reason, "caught", label);
         assert.equal(game.escapes, 0, label);
-        assert.deepEqual(game.player, { x: 5, y: 13 }, "the player never moved");
+        assert.deepEqual(game.player, initialPlayer, "the player never moved");
       }
     }
   }
 });
 
-test("a committed lunge into a wall, hedge, or body awards a win", () => {
+test("a committed crash respawns a hunter without skipping the score gate", () => {
   const wall = moveSnake(running({ snake: [{ x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }], snakeDirection: "left", committedMoves: 1 }));
-  assert.equal(wall.phase, "won"); assert.equal(wall.reason, "wall"); assert(wall.score > 0);
+  assert.equal(wall.phase, "running"); assert.equal(wall.reason, null); assert.equal(wall.escapes, 1); assert.equal(wall.score, 0);
   const hedge = moveSnake(running({ arena: 1, snake: [{ x: 6, y: 6 }, { x: 5, y: 6 }, { x: 4, y: 6 }], snakeDirection: "right", committedMoves: 1 }));
-  assert.equal(hedge.reason, "obstacle");
+  assert.equal(hedge.phase, "running"); assert.equal(hedge.escapes, 1);
   const body = moveSnake(running({ snake: [{ x: 4, y: 4 }, { x: 5, y: 4 }, { x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3, y: 5 }], snakeDirection: "down", committedMoves: 1 }));
-  assert.equal(body.phase, "won"); assert.equal(body.reason, "body");
+  assert.equal(body.phase, "running"); assert.equal(body.escapes, 1);
 });
 
-test("a real mid-lunge dodge at the left boundary still baits a crash win", () => {
+test("a real mid-lunge dodge baits a respawn while the level remains active", () => {
   let game = running({ player: { x: 0, y: 3 } });
   let dodged = false;
-  for (let i = 0; i < 1000 && game.phase === "running"; i++) {
+  for (let i = 0; i < 1000 && game.phase === "running" && !game.escapes; i++) {
     game = step(game, null);
     if (!dodged && game.snake[0].x === 1 && game.snake[0].y === game.player.y && game.snakeDirection === "left" && game.committedMoves > 0) {
       game = dash(game, "down");
@@ -67,8 +68,9 @@ test("a real mid-lunge dodge at the left boundary still baits a crash win", () =
   assert(dodged, "the player dodges after the AI starts its lunge");
   assert.deepEqual(game.player, { x: 0, y: 6 });
   assert.equal(game.closeCalls, 1);
-  assert.equal(game.phase, "won");
-  assert.equal(game.reason, "wall");
+  assert.equal(game.phase, "running");
+  assert.equal(game.reason, null);
+  assert.equal(game.escapes, 1);
 });
 
 test("the snake may enter its departing tail cell", () => {
@@ -102,12 +104,13 @@ test("dash covers three cells and recharges in four active seconds", () => {
   assert.equal(game.dashCooldown, 0);
 });
 
-test("hunger shrinks the hunter and surviving the arena duration wins", () => {
+test("safe movement earns the target; idle time cannot clear a level", () => {
   let game = running({ snakeClock: -1000000 });
   for (let i = 0; i < 500; i++) game = step(game, null);
-  assert(game.snake.length < ARENAS[0].length);
-  while (game.phase === "running") game = step(game, null);
-  assert.equal(game.reason, "hunger"); assert.equal(game.elapsed, ARENAS[0].duration);
+  assert.equal(game.score, 0); assert.equal(game.phase, "running");
+  const target = ARENAS[0].scoreTarget;
+  game = step({ ...game, score: target - 1, difficulty: "easy", playerClock: 80 }, "left");
+  assert.equal(game.reason, "target"); assert.equal(game.phase, "won"); assert.equal(game.score, target);
 });
 
 test("restarting creates a fresh round with selected arena and difficulty", () => {

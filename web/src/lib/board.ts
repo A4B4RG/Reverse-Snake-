@@ -99,40 +99,19 @@ export function fitSnake(
   }
   return path;
 }
-/** Scale authored terrain and fill between adjacent stones, retaining continuous walls. */
+/** Tile authored wall cells over their full footprint, keeping density in fullscreen. */
 export function scaleObstacles(points: Point[], b: Board): Point[] {
-  const template = { columns: 20, rows: 20 },
-    result = new Map<string, Point>();
-  const authored = new Set(points.map(key));
+  const result = new Map<string, Point>();
   for (const p of points) {
-    const a = project(p, template, b);
-    result.set(key(a), a);
-    for (const q of points) {
-      if (Math.abs(p.x - q.x) + Math.abs(p.y - q.y) !== 1) continue;
-      const c = project(q, template, b),
-        count = Math.max(Math.abs(a.x - c.x), Math.abs(a.y - c.y));
-      for (let i = 1; i < count; i++) {
-        const v = {
-          x: Math.round(a.x + ((c.x - a.x) * i) / count),
-          y: Math.round(a.y + ((c.y - a.y) * i) / count),
-        };
-        result.set(key(v), v);
+    const left = Math.floor(p.x * b.columns / 20),
+      top = Math.floor(p.y * b.rows / 20),
+      right = Math.max(left, Math.floor((p.x + 1) * b.columns / 20) - 1),
+      bottom = Math.max(top, Math.floor((p.y + 1) * b.rows / 20) - 1);
+    for (let y = top; y <= bottom; y++)
+      for (let x = left; x <= right; x++) {
+        const cell = { x, y };
+        if (inBoard(cell, b)) result.set(key(cell), cell);
       }
-    }
-    // A scaled solid island must stay solid rather than enclosing unreachable food.
-    if (
-      authored.has(key({ x: p.x + 1, y: p.y })) &&
-      authored.has(key({ x: p.x, y: p.y + 1 })) &&
-      authored.has(key({ x: p.x + 1, y: p.y + 1 }))
-    ) {
-      const end = project({ x: p.x + 1, y: p.y + 1 }, template, b);
-      for (let y = a.y; y <= end.y; y++) {
-        for (let x = a.x; x <= end.x; x++) {
-          const cell = { x, y };
-          result.set(key(cell), cell);
-        }
-      }
-    }
   }
   return [...result.values()];
 }

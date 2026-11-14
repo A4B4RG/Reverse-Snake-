@@ -53,26 +53,6 @@ test("releasing Shift before W stops movement and pause/resume clears held keys"
   expect(await fruit(page)).toEqual(stopped);
 });
 
-test("two touch contacts and a held key retain independent ownership", async ({ page, context }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await openGame(page); await start(page);
-  await page.locator(".touch-controls").evaluate(el => el.scrollIntoView({ behavior: "instant", block: "center" }));
-  const initial=await fruit(page);
-  await page.keyboard.down("ArrowUp");
-  const left = (await page.getByRole("button", { name: "Move left", exact: true }).boundingBox())!;
-  const down = (await page.getByRole("button", { name: "Move down", exact: true }).boundingBox())!;
-  const one = { x: left.x + left.width / 2, y: left.y + left.height / 2, id: 1 };
-  const two = { x: down.x + down.width / 2, y: down.y + down.height / 2, id: 2 };
-  const cdp = await context.newCDPSession(page);
-  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [one] });
-  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [one, two] });
-  await page.clock.runFor(100); expect(await fruit(page)).toEqual({x:initial.x,y:initial.y+1});
-  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [one] });
-  await page.clock.runFor(100); expect(await fruit(page)).toEqual({x:initial.x,y:initial.y+2});
-  await cdp.send("Input.dispatchTouchEvent", { type: "touchCancel", touchPoints: [] });
-  await page.clock.runFor(100); expect(await fruit(page)).toEqual({x:initial.x,y:initial.y+1});
-  await page.keyboard.up("ArrowUp");
-});
 
 for (const mode of ["Levels", "Survival"] as const) {
   test(`${mode}: a real close call shows the boost and pausing freezes its timer`, async ({ page }) => {
@@ -126,6 +106,7 @@ test("a survival result and its new fields survive a browser reload", async ({ p
 
 for (const difficulty of ["Easy", "Normal", "Hard"] as const) {
   test(`Wild Heart Levels ${difficulty}: standing still loses instead of awarding an automatic win`, async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("reverse-snake:v1", JSON.stringify({ unlocked: 4 })));
     await openGame(page);
     await page.getByRole("button", { name: "Choose Wild Heart", exact: true }).dispatchEvent("click");
     await page.getByRole("button", { name: difficulty, exact: true }).dispatchEvent("click");
@@ -141,6 +122,7 @@ for (const difficulty of ["Easy", "Normal", "Hard"] as const) {
 }
 
 test("Wild Heart Survival keeps chasing fruit on the far side of its root wall", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("reverse-snake:v1", JSON.stringify({ unlocked: 4 })));
   await openGame(page);
   await page.getByRole("button", { name: "Choose Wild Heart", exact: true }).dispatchEvent("click");
   await page.getByRole("button", { name: "Hard", exact: true }).dispatchEvent("click");
@@ -169,11 +151,12 @@ test("jungle layout, text contrast and control sizes at desktop and mobile width
     await page.setViewportSize({ width, height: 1000 }); await page.clock.runFor(40);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     for (const selector of [".dark-icon-button", ".difficulty-options button", ".arena-arrows button"]) {
-      const boxes = await page.locator(selector).evaluateAll(els => els.map(el => ({ w: el.getBoundingClientRect().width, h: el.getBoundingClientRect().height })));
+      const boxes = await page.locator(selector).evaluateAll(els => els.filter(el => el.getBoundingClientRect().width > 0).map(el => ({ w: el.getBoundingClientRect().width, h: el.getBoundingClientRect().height })));
       expect(boxes.every(b => b.w >= 44 && b.h >= 44)).toBe(true);
     }
     if (width <= 900) {
-      const box = (await page.getByRole("button", { name: "Move up" }).boundingBox())!;
+      await expect(page.getByRole("button", { name: /^Move / })).toHaveCount(0);
+      const box = (await page.getByRole("button", { name: "Open game menu" }).boundingBox())!;
       expect(box.width).toBeGreaterThanOrEqual(44); expect(box.height).toBeGreaterThanOrEqual(44);
     }
     if (width === 1440 || width === 390) await page.screenshot({ path: `docs/screenshots/jungle-${width === 1440 ? "desktop" : "mobile"}.png`, fullPage: true });

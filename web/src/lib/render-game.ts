@@ -43,7 +43,7 @@ export function renderGame(ctx: CanvasRenderingContext2D, game: GameState, reduc
   }
   ctx.strokeStyle = palette.border; ctx.lineWidth = 1;
   ctx.strokeRect(PAD, PAD, width - PAD * 2, height - PAD * 2);
-  obstaclesFor(game.arena,board).forEach(point => {
+  (game.displayObstacles ?? obstaclesFor(game.arena,board)).forEach(point => {
     const { x, y } = center(point);
     ctx.fillStyle = palette.stone;
     ctx.beginPath(); ctx.roundRect(x - CELL*.4, y - CELL*.4, CELL*.8, CELL*.8, 4); ctx.fill();

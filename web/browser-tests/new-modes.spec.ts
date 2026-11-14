@@ -1,3 +1,4 @@
+import { swipe } from "./helpers";
 import { expect, test } from "@playwright/test";
 test.setTimeout(45000);
 
@@ -94,14 +95,13 @@ for (const mode of ["hunter", "challenge"] as const) {
       expect(canvas.width).toBeGreaterThanOrEqual(170);
       const outer=(await page.locator(".board-stage").boundingBox())!;
       expect(canvas.width).toBeCloseTo(outer.width,0);expect(canvas.height).toBeCloseTo(outer.height,0);
+      await page.getByRole("button", { name: "Open game menu" }).click();
       await page.getByRole("button", { name: "How to play" }).click();
       await expect(page.getByRole("dialog")).toBeVisible();
       await page.keyboard.press("Escape");
       await expect(page.getByRole("dialog")).toHaveCount(0);
       await page.getByRole("button", { name: "Start round" }).click();
-      await page
-        .getByRole("button", { name: "Move down" })
-        .dispatchEvent("click", { detail: 0 });
+      await swipe(page, "down");
       await expect(page.locator(".board-stage")).toHaveAttribute(
         "data-phase",
         "running",

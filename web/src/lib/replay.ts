@@ -1,4 +1,5 @@
 import {
+  ARENAS,
   createGame,
   resizeGame,
   dash,
@@ -24,8 +25,12 @@ import { validAppearance, type Appearance } from "./appearance";
 import * as legacyGame from "./legacy/game";
 import * as legacyHunter from "./legacy/hunter";
 import * as legacyChallenge from "./legacy/challenge";
-export const GAME_VERSION = "1.2.0";
-export const RULESET = "orchard-3";
+import * as orchardGame from "./legacy/orchard3/game";
+import * as orchardHunter from "./legacy/orchard3/hunter";
+import * as orchardChallenge from "./legacy/orchard3/challenge";
+type PreviousEngine = boolean | "orchard3";
+export const GAME_VERSION = "1.3.0";
+export const RULESET = "orchard-4";
 export type RunMode = GameMode | "hunter" | "challenge";
 export type RunMeta = {
   mode: RunMode;
@@ -44,7 +49,7 @@ export function isRunMeta(value: unknown): value is RunMeta {
     !["levels", "survival", "hunter", "challenge"].includes(m.mode) ||
     !Number.isInteger(m.arena) ||
     m.arena < 0 ||
-    m.arena > 4 ||
+    m.arena >= ARENAS.length ||
     !["easy", "normal", "hard"].includes(m.difficulty) ||
     !Number.isInteger(m.seed) ||
     m.seed < 0 ||
@@ -93,7 +98,15 @@ const MAX_BYTES = 250_000,
 const direction = (v: unknown): v is Direction | null =>
   v === null || ["up", "down", "left", "right"].includes(v as string);
 export const isHunter = (s: RunState): s is HunterState => "turns" in s;
-export function createRun(meta: RunMeta, legacy = false): RunState {
+export function createRun(meta: RunMeta, legacy: PreviousEngine = false): RunState {
+  if (legacy === "orchard3") {
+    const s = meta.mode === "hunter"
+      ? orchardHunter.createHunter(meta.arena, meta.difficulty, meta.seed, meta.board, meta.learning, meta.appearance)
+      : meta.mode === "challenge"
+        ? orchardChallenge.createChallenge(orchardChallenge.CHALLENGES.find(c => c.id === meta.challenge)!, meta.board, meta.learning, meta.appearance)
+        : orchardGame.createGame(meta.arena, meta.difficulty, meta.mode, meta.board, meta.learning, meta.appearance);
+    return { ...s, phase: "running" } as RunState;
+  }
   if (legacy) {
     const s =
       meta.mode === "hunter"
@@ -140,8 +153,23 @@ export function applyCommand(
   s: RunState,
   command: Command,
   meta: RunMeta,
-  legacy = false,
+  legacy: PreviousEngine = false,
 ): RunState {
+  if (legacy === "orchard3") {
+    if (command.action === "resize") return (isHunter(s)
+      ? orchardHunter.resizeHunter(s as orchardHunter.HunterState, command.board)
+      : orchardGame.resizeGame(s as orchardGame.GameState, command.board)) as RunState;
+    if (command.action === "step") return (isHunter(s)
+      ? orchardHunter.hunterStep(s as orchardHunter.HunterState)
+      : meta.mode === "challenge"
+        ? orchardChallenge.challengeStep(s as orchardGame.GameState, command.direction, orchardChallenge.CHALLENGES.find(c => c.id === meta.challenge)!)
+        : orchardGame.step(s as orchardGame.GameState, command.direction)) as RunState;
+    if (command.action === "steer" && command.direction) return (isHunter(s)
+      ? orchardHunter.turnHunter(s as orchardHunter.HunterState, command.direction)
+      : orchardGame.steer(s as orchardGame.GameState, command.direction)) as RunState;
+    if (command.action === "dash") return isHunter(s) ? s : orchardGame.dash(s as orchardGame.GameState, command.direction) as RunState;
+    legacy = false;
+  }
   if (command.action === "resize")
     return legacy
       ? s
@@ -281,15 +309,17 @@ export function parseReplay(value: unknown): Replay | null {
     if (
       !(
         (r.format === 1 && r.version === "1.1.0" && r.ruleset === "canopy-2") ||
+        (r.format === 2 && r.version === "1.2.0" && r.ruleset === "orchard-3") ||
         (r.format === 2 && r.version === GAME_VERSION && r.ruleset === RULESET)
       ) ||
       !isRunMeta(m) ||
+      (r.ruleset !== RULESET && m.arena >= 5) ||
       (r.preview !== undefined && typeof r.preview !== "boolean") ||
       !m ||
       !["levels", "survival", "hunter", "challenge"].includes(m.mode) ||
       !Number.isInteger(m.arena) ||
       m.arena < 0 ||
-      m.arena > 4 ||
+      m.arena >= ARENAS.length ||
       !["easy", "normal", "hard"].includes(m.difficulty) ||
       !Number.isInteger(m.seed) ||
       m.seed < 0 ||
@@ -345,8 +375,10 @@ export class ReplayCursor {
   remaining = 0;
   done = false;
   valid = true;
+  engine: PreviousEngine;
   constructor(public replay: Replay) {
-    this.state = createRun(replay.meta, replay.format === 1);
+    this.engine = replay.format === 1 ? true : replay.ruleset === "orchard-3" ? "orchard3" : false;
+    this.state = createRun(replay.meta, this.engine);
   }
   advance() {
     if (this.done) return this.state;
@@ -358,7 +390,7 @@ export class ReplayCursor {
           this.state,
           command,
           this.replay.meta,
-          this.replay.format === 1,
+          this.engine,
         );
         if (!--this.remaining) this.index++;
         return this.state;
@@ -367,7 +399,7 @@ export class ReplayCursor {
         this.state,
         command,
         this.replay.meta,
-        this.replay.format === 1,
+        this.engine,
       );
       this.index++;
     }
@@ -409,6 +441,7 @@ export function saveReplay(replay: Replay): boolean {
 export function compatibleGhost(r: Replay, m: RunMeta) {
   return (
     r.format === 2 &&
+    r.ruleset === RULESET &&
     r.meta.board?.columns === m.board?.columns &&
     r.meta.board?.rows === m.board?.rows &&
     r.meta.mode === m.mode &&

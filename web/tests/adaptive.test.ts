@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { boardForSize, inBoard, type Board } from "../src/lib/board";
 import {
+  ARENAS,
   chooseSnakeDirection,
   createGame,
   dash,
@@ -75,7 +76,7 @@ test("geometry follows both available axes and fullscreen adds playable cells", 
 });
 test("all rectangular arenas spawn legal actors and catch idle fruit without reset wins", () => {
   for (const board of boards)
-    for (let arena = 0; arena < 5; arena++)
+    for (let arena = 0; arena < ARENAS.length; arena++)
       for (const difficulty of ["easy", "normal", "hard"] as const) {
         let s = {
           ...createGame(arena, difficulty, "survival", board),
@@ -102,7 +103,7 @@ test("all rectangular arenas spawn legal actors and catch idle fruit without res
       }
 });
 test("active resizing preserves time, score, length, models and connected actors", () => {
-  for (let arena = 0; arena < 5; arena++) {
+  for (let arena = 0; arena < ARENAS.length; arena++) {
     let s = {
       ...createGame(arena, "hard", "survival", boards[2]),
       phase: "running" as GameState["phase"],
@@ -117,7 +118,7 @@ test("active resizing preserves time, score, length, models and connected actors
       assert.equal(s.elapsed, 3480);
       assert.equal(s.score, 348);
       assert.equal(s.boostRemaining, 2300);
-      assert.equal(s.snake.length, 14 + arena * 2);
+      assert.equal(s.snake.length, ARENAS[arena].length);
       assert.equal(moveSafe(s).phase, "running");
     }
     const h = createHunter(arena, "normal", 4, boards[2]),
@@ -165,11 +166,11 @@ test("learned snake moves and learned fruit evasion change opponent decisions", 
     const base = {
       ...createGame(0, difficulty, "levels", board),
       snake: [
-        { x: 12, y: 6 },
-        { x: 13, y: 6 },
-        { x: 14, y: 6 },
+        { x: 12, y: 2 },
+        { x: 13, y: 2 },
+        { x: 14, y: 2 },
       ],
-      player: { x: 9, y: 9 },
+      player: { x: 9, y: 5 },
       snakeDirection: "left" as const,
       lastPlayerMove: 0,
     };
@@ -362,7 +363,7 @@ test("scaled solid islands never create inaccessible food pockets", () => {
     { columns: 12, rows: 12 },
     { columns: 96, rows: 96 },
   ])
-    for (let arena = 0; arena < 5; arena++) {
+    for (let arena = 0; arena < ARENAS.length; arena++) {
       const blocked = new Set(
         obstaclesFor(arena, board).map((p) => p.y * board.columns + p.x),
       );

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
-import { fruit } from "./helpers";
+import { fruit, chooseAppearance } from "./helpers";
 
 for (const route of ["/", "/hunter", "/challenge"]) {
   test(`${route}: skins persist, freeze during the match and are recorded`, async ({
@@ -13,12 +13,7 @@ for (const route of ["/", "/hunter", "/challenge"]) {
       "true",
     );
     await page.clock.pauseAt(new Date("2026-11-14T00:00:01Z"));
-    await page
-      .getByRole("button", { name: "Pear fruit", exact: true })
-      .dispatchEvent("click");
-    await page
-      .getByRole("button", { name: "Coral snake", exact: true })
-      .dispatchEvent("click");
+    await chooseAppearance(page, "pear", "coral");
     await page.clock.runFor(40);
     await expect(page.locator("canvas")).toHaveAttribute("data-fruit", "pear");
     await expect(page.locator("canvas")).toHaveAttribute("data-snake", "coral");
@@ -28,9 +23,12 @@ for (const route of ["/", "/hunter", "/challenge"]) {
       })
       .dispatchEvent("click");
     await page.clock.runFor(40);
-    await expect(
-      page.getByRole("button", { name: "Apple fruit", exact: true }),
-    ).toBeDisabled();
+    await page.getByRole("button", { name: "Open game menu" }).dispatchEvent("click");
+    await expect(page.getByRole("combobox", { name: "Food character" })).toBeDisabled();
+    await page.getByRole("button", { name: "Close menu" }).dispatchEvent("click");
+    await page.locator("canvas").focus();
+    await page.keyboard.press("Enter");
+    await page.clock.runFor(40);
     await page.clock.runFor(30000);
     await expect(page.locator(".board-stage")).toHaveAttribute(
       "data-phase",
@@ -161,9 +159,7 @@ test("every fruit and snake design produces distinct artwork", async ({
   await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   const hashes = new Set<string>();
   for (const skin of ["Apple", "Mango", "Pear", "Orange", "Strawberry"]) {
-    await page
-      .getByRole("button", { name: `${skin} fruit`, exact: true })
-      .click();
+    await chooseAppearance(page, skin.toLowerCase());
     await expect(page.locator("canvas")).toHaveAttribute(
       "data-fruit",
       skin.toLowerCase(),
@@ -177,9 +173,7 @@ test("every fruit and snake design produces distinct artwork", async ({
   expect(hashes.size).toBe(5);
   hashes.clear();
   for (const skin of ["Amber", "Jade", "Coral", "Midnight"]) {
-    await page
-      .getByRole("button", { name: `${skin} snake`, exact: true })
-      .click();
+    await chooseAppearance(page, undefined, skin.toLowerCase());
     await expect(page.locator("canvas")).toHaveAttribute(
       "data-snake",
       skin.toLowerCase(),

@@ -1,4 +1,20 @@
 import { expect, type Page } from "@playwright/test";
+export async function chooseAppearance(page: Page, food?: string, snake?: string) {
+  await page.getByRole("button", { name: "Open game menu" }).dispatchEvent("click");
+  if (food) await page.getByRole("combobox", { name: "Food character" }).selectOption(food);
+  if (snake) await page.getByRole("combobox", { name: "Snake design" }).selectOption(snake);
+  await page.getByRole("button", { name: "Close menu" }).dispatchEvent("click");
+}
+export async function swipe(page: Page, d: Direction) {
+  const box = (await page.locator("canvas").boundingBox())!;
+  const x = box.x + box.width / 2, y = box.y + box.height / 2;
+  const delta = { up: [0, -60], right: [60, 0], down: [0, 60], left: [-60, 0] }[d];
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y, id: 1 }] });
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x + delta[0], y: y + delta[1], id: 1 }] });
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await cdp.detach();
+}
 import {
   createGame,
   dash,

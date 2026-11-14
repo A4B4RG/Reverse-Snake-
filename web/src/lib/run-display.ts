@@ -1,10 +1,12 @@
 import { createGame, type GameState } from "./game";
 import { isHunter, type RunState } from "./replay";
+import * as orchardGame from "./legacy/orchard3/game";
+import * as originalGame from "./legacy/game";
 
-export function displayRun(s: RunState): GameState {
+export function displayRun(s: RunState, ruleset?: string): GameState {
   const board = s.board ?? { columns: 20, rows: 20 },
     appearance = s.appearance ?? { fruit: "mango", snake: "amber" };
-  return isHunter(s)
+  const display = isHunter(s)
     ? {
         ...createGame(
           s.arena,
@@ -22,4 +24,5 @@ export function displayRun(s: RunState): GameState {
         elapsed: s.elapsed,
       }
     : { ...s, board, appearance };
+  return ruleset === "orchard-3" ? { ...display, displayObstacles: orchardGame.obstaclesFor(s.arena, board) } : ruleset === "canopy-2" ? { ...display, displayObstacles: originalGame.ARENAS[s.arena].obstacles } : display;
 }

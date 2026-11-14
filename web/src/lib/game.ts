@@ -31,13 +31,14 @@ export type Direction = "up" | "right" | "down" | "left";
 export type Difficulty = "easy" | "normal" | "hard";
 export type GameMode = "levels" | "survival";
 export type Phase = "ready" | "running" | "paused" | "won" | "lost";
-export type EndReason = "wall" | "body" | "obstacle" | "hunger" | "caught";
+export type EndReason = "wall" | "body" | "obstacle" | "hunger" | "caught" | "target";
 export type Arena = {
   name: string;
   subtitle: string;
   description: string;
   length: number;
   duration: number;
+  scoreTarget: number;
   obstacles: Point[];
 };
 
@@ -59,10 +60,11 @@ export const ARENAS: Arena[] = [
     name: "Canopy Clearing",
     subtitle: "Your first taste of the wild.",
     description:
-      "Open jungle floor. A hungry snake. Find your feet under the canopy.",
+      "Scattered root corners and open exits. Find your feet under the canopy.",
     length: 14,
     duration: 55_000,
-    obstacles: [],
+    scoreTarget: 150,
+    obstacles: [...line(6, 6, 5), ...line(6, 6, 3, true), ...line(12, 12, 4), ...line(15, 10, 3, true), ...line(8, 16, 4), ...line(3, 4, 3, true), ...line(12, 5, 5), ...line(3, 15, 3), ...line(16, 16, 2, true)],
   },
   {
     name: "Root Divide",
@@ -71,7 +73,8 @@ export const ARENAS: Arena[] = [
       "Two mossy root walls split the clearing. Slip through the gaps and let the hunter overcommit.",
     length: 16,
     duration: 60_000,
-    obstacles: [...line(7, 6, 7, true), ...line(12, 8, 7, true)],
+    scoreTarget: 250,
+    obstacles: [...line(7, 4, 10, true), ...line(12, 7, 10, true), ...line(3, 8, 5), ...line(12, 12, 5), ...line(3, 16, 5)],
   },
   {
     name: "Orchard Grove",
@@ -80,8 +83,9 @@ export const ARENAS: Arena[] = [
       "Four islands of mossy stone. Weave between them to break the pursuit.",
     length: 18,
     duration: 65_000,
-    obstacles: [6, 12].flatMap((x) =>
-      [7, 13].flatMap((y) => [...line(x, y, 2), ...line(x, y + 1, 2)]),
+    scoreTarget: 350,
+    obstacles: [5, 12].flatMap((x) =>
+      [6, 13].flatMap((y) => [0, 1, 2].flatMap((dy) => line(x, y + dy, 3))),
     ),
   },
   {
@@ -91,11 +95,11 @@ export const ARENAS: Arena[] = [
       "Ancient stones and narrow openings. Draw the snake in, then find your way out.",
     length: 20,
     duration: 70_000,
+    scoreTarget: 450,
     obstacles: [
-      ...line(7, 7, 6),
-      ...line(7, 13, 6),
-      ...line(7, 8, 2, true),
-      ...line(12, 11, 2, true),
+      ...line(4, 5, 12), ...line(4, 15, 12),
+      ...line(4, 6, 4, true), ...line(15, 11, 4, true),
+      ...line(8, 9, 4), ...line(8, 10, 3, true),
     ],
   },
   {
@@ -105,14 +109,21 @@ export const ARENAS: Arena[] = [
       "A longer hunter and tangled blind corners. Put everything you have learned to the test.",
     length: 22,
     duration: 75_000,
+    scoreTarget: 550,
     obstacles: [
       ...line(4, 5, 5, true),
       ...line(4, 9, 3),
       ...line(12, 9, 5),
       ...line(16, 10, 5, true),
       ...line(8, 15, 4),
+      ...line(8, 4, 7), ...line(8, 4, 4, true), ...line(4, 13, 3, true), ...line(12, 12, 3, true),
     ],
   },
+  { name: "Bamboo Lanes", subtitle: "Turn between the stems.", description: "Alternating bamboo walls form long lanes and quick corners.", length: 23, duration: 80_000, scoreTarget: 650, obstacles: [4, 8, 12, 16].flatMap((x, i) => line(x, i % 2 ? 8 : 4, 9, true)) },
+  { name: "River Switchbacks", subtitle: "Follow the bends.", description: "Staggered river banks leave narrow crossings between broad turns.", length: 24, duration: 85_000, scoreTarget: 800, obstacles: [5, 9, 13, 17].flatMap((y, i) => line(i % 2 ? 7 : 3, y, 10)) },
+  { name: "Ruined Courtyard", subtitle: "Find the broken gates.", description: "Broken outer walls surround a second courtyard with offset entrances.", length: 25, duration: 90_000, scoreTarget: 950, obstacles: [...line(3, 4, 13), ...line(3, 16, 13), ...line(3, 5, 7, true), ...line(16, 9, 8, true), ...line(7, 8, 6), ...line(7, 12, 6), ...line(12, 9, 3, true)] },
+  { name: "Thorn Labyrinth", subtitle: "Every corner is a choice.", description: "Interlocking thorn walls reward sharp turns and planned exits.", length: 26, duration: 95_000, scoreTarget: 1100, obstacles: [...line(4, 4, 11, true), ...line(4, 4, 7), ...line(8, 8, 9), ...line(8, 8, 8, true), ...line(12, 4, 3, true), ...line(12, 12, 5), ...line(16, 12, 5, true), ...line(3, 17, 10)] },
+  { name: "Crown Maze", subtitle: "Master the deep canopy.", description: "Nested broken walls and staggered baffles make the final chase a maze.", length: 28, duration: 100_000, scoreTarget: 1300, obstacles: [...line(3, 4, 14), ...line(3, 17, 14), ...line(3, 5, 8, true), ...line(16, 9, 8, true), ...line(7, 7, 6), ...line(7, 13, 6), ...line(7, 8, 3, true), ...line(12, 10, 3, true), ...line(10, 16, 3, true)] },
 ];
 
 export const DIFFICULTIES: Record<
@@ -149,6 +160,7 @@ export const DIFFICULTIES: Record<
 };
 
 export interface GameState {
+  displayObstacles?: Point[];
   board: Board;
   appearance: Appearance;
   learning: Learning;
@@ -183,8 +195,17 @@ export interface GameState {
 export const equal = (a: Point, b: Point) => a.x === b.x && a.y === b.y;
 export const inside = (p: Point, board: Board = DEFAULT_BOARD) =>
   inBoard(p, board);
-export const obstaclesFor = (arena: number, board: Board) =>
-  scaleObstacles(ARENAS[arena].obstacles, board);
+const terrainCache = new Map<string, Point[]>();
+export function obstaclesFor(arena: number, board: Board): Point[] {
+  const key = `${arena}:${board.columns}:${board.rows}`;
+  let terrain = terrainCache.get(key);
+  if (!terrain) {
+    terrain = scaleObstacles(ARENAS[arena].obstacles, board);
+    if (terrainCache.size >= 80) terrainCache.delete(terrainCache.keys().next().value!);
+    terrainCache.set(key, terrain);
+  }
+  return terrain;
+}
 const add = (a: Point, b: Point): Point => ({ x: a.x + b.x, y: a.y + b.y });
 const distance = (a: Point, b: Point) =>
   Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
@@ -258,7 +279,7 @@ export function finish(
   phase: "won" | "lost",
   reason: EndReason,
 ): GameState {
-  if (phase === "won" && state.mode === "survival") {
+  if (phase === "won" && (state.mode === "survival" || reason !== "target")) {
     const obstacles = obstaclesFor(state.arena, state.board);
     const head = nearestFree(
       {
@@ -295,14 +316,7 @@ export function finish(
     phase,
     reason,
     pendingDirection: null,
-    score:
-      state.score +
-      (phase === "won"
-        ? Math.round(
-            (1000 + state.arena * 250) *
-              DIFFICULTIES[state.difficulty].multiplier,
-          )
-        : 0),
+    score: Math.floor(state.score),
   };
 }
 
@@ -325,6 +339,7 @@ function movePlayer(state: GameState, direction: Direction): GameState {
     player: next,
     playerDirection: direction,
     lastPlayerMove: state.elapsed,
+    score: state.score + (state.mode === "levels" ? DIFFICULTIES[state.difficulty].multiplier : 0),
   };
   if (!occupied(next, state.snake))
     moved = {
@@ -586,8 +601,7 @@ export function step(state: GameState, direction: Direction | null): GameState {
     closeCallFlash: Math.max(0, state.closeCallFlash - STEP_MS),
     boostTrail: state.boostRemaining > STEP_MS ? state.boostTrail : [],
   };
-  next.score =
-    Math.floor(next.elapsed / 100) * DIFFICULTIES[next.difficulty].multiplier;
+  next.score = state.mode === "levels" ? state.score : Math.floor(next.elapsed / 100) * DIFFICULTIES[next.difficulty].multiplier;
   const interval = state.boostRemaining > 0 ? BOOST_INTERVAL : PLAYER_INTERVAL;
   if (next.playerClock >= interval) {
     const heading = next.pendingDirection ?? direction;
@@ -604,11 +618,11 @@ export function step(state: GameState, direction: Direction | null): GameState {
   }
   const arena = ARENAS[next.arena];
   if (next.mode === "survival") return next;
-  if (next.elapsed >= arena.duration) return finish(next, "won", "hunger");
+  if (next.score >= arena.scoreTarget) return finish({ ...next, score: arena.scoreTarget }, "won", "target");
   const targetLength = Math.max(
     3,
     arena.length -
-      Math.floor(next.elapsed / (arena.duration / (arena.length - 3))),
+      Math.floor(next.score / (arena.scoreTarget / (arena.length - 3))),
   );
   if (next.snake.length > targetLength)
     next.snake = next.snake.slice(0, targetLength);

@@ -1,5 +1,19 @@
 # Release evidence
 
+## Maps and mobile controls release 1.3.0 — 14 November 2026
+
+Ten maps now provide increasing Levels score targets and saved sequential unlocks. Levels points come from moved cells, so idle/blocked play cannot unlock a map; crashed hunters respawn until the objective is met. Complex wall footprints retain density as fullscreen adds cells. Named Food character / Snake design dropdowns appear once in Menu and persist across rounds/modes. Compact layouts put setup in Menu and leave most space for the board. Swipes steer in their matching direction, double-tap after a swipe dashes in the last direction, and on-screen arrow/Dash buttons are removed. Desktop keyboard controls remain.
+
+New orchard-4 recordings retain orchard-3 and canopy-2 replay compatibility with their original rules and terrain. Current product/mode/visual reports, screenshots and ONLINE_PVP.md accompany the release; historical PROJECT_STATUS.md remains preserved. PvP is a proposal: keep the Vercel frontend address, add a realtime authoritative match service, and optionally add a domain later.
+
+Local checks: **59 rules tests**, build, lint, types, zero-findings audit, and all **55 runnable browser cases** verified across the full run and the corrected six-case rerun. One existing headless visibility skip remains; VERIFICATION.md explains the border-width assertion correction. No dependency versions changed.
+
+Repository: https://github.com/A4B4RG/Reverse-Snake-, branch **main**. Pre-update rollback checkpoint: `0a6c35e9118613e6fca67a14e5b86d76ac646ada`. Source, tests, reports and current captures are delivered through the existing main integration. The [main workflow](https://github.com/A4B4RG/Reverse-Snake-/actions/workflows/verify.yml?query=branch%3Amain) identifies each exact pushed revision and its clean-install/Linux verification.
+
+Hosted Preview/production gameplay remains **NOT VERIFIED** under the explicit instruction **“Push main; document hosted verification gap.”** The declined access is not bypassed. Source push/CI does not establish the deployed version at https://reverse-snake-chi.vercel.app. Roll back source with a reviewed revert using the existing project; no force-push or backend migration is needed. Reverting source does not restore cleared local saves.
+
+The sections below preserve earlier release evidence.
+
 ## Controls beneath the map — 14 November 2026
 
 “A few handy moves” now sits directly below the desktop game frame in a compact panel of matching width. The sidebar contains setup, and the “Outsmart the hunter” heading, fruit ornament and padding are smaller. Responsive touch layouts and the flexible fullscreen board are retained. Build, lint, types and 21 targeted browser checks pass; updated screenshots and current product reports accompany the change. This update builds on main `91d55fb752a9c904c72516d9deaf751d7e644754`. Main delivery remains authorized; hosted Preview/production verification remains NOT VERIFIED under the existing user waiver.

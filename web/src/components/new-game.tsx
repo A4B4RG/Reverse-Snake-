@@ -2,14 +2,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowDown,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
   Expand,
   Pause,
   Play,
-  Zap,
 } from "lucide-react";
 import {
   ARENAS,
@@ -382,6 +377,13 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
           currentMode={mode === "hunter" ? "hunter" : undefined}
           onOpen={pause}
         >
+          <AppearancePicker value={state.appearance} disabled={active} onChange={appearance}/>
+          <div className="mobile-setup menu-settings">
+            {mode === "hunter" ? <>
+              <label>Map<select aria-label="Map" value={meta.arena} disabled={active} onChange={e => configure({ ...meta, arena: Number(e.target.value) })}>{ARENAS.map((a,i) => <option key={a.name} value={i}>{a.name}</option>)}</select></label>
+              <label>Pace<select aria-label="Pace" value={meta.difficulty} disabled={active} onChange={e => configure({ ...meta, difficulty: e.target.value as Difficulty })}>{Object.entries(DIFFICULTIES).map(([id,d]) => <option key={id} value={id}>{d.label}</option>)}</select></label>
+            </> : <label>Course<select aria-label="Course" value={meta.challenge} disabled={active} onChange={e => { const c = CHALLENGES.find(c => c.id === e.target.value)!; configure({ mode, arena: c.arena, difficulty: c.difficulty, seed: c.seed, challenge: c.id }); }}>{CHALLENGES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>}
+          </div>
           <button
             data-menu-close
             onClick={() => {
@@ -449,15 +451,18 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
                 </button>
               </div>
             </div>
+            <div className="round-progress"><span>{ARENAS[meta.arena].name}</span><strong>{mode === "hunter" ? "Hunter" : "Challenge"}</strong></div>
             <div className="board-stage" data-phase={state.phase}>
               <GameCanvas
                 gameRef={displayRef}
                 canvasRef={canvasRef}
                 previewRef={previewRef}
                 onResize={resize}
+                onSwipe={d => { input.current.release("swipe"); press("swipe", d); focus(); }}
+                onDash={mode === "challenge" ? dash : undefined}
                 ariaLabel={
                   mode === "hunter"
-                    ? "Hunter playing field. Arrow keys or WASD turn your snake, Escape pauses."
+                    ? "Hunter playing field. Swipe or use arrow keys / WASD to turn. Escape pauses."
                     : undefined
                 }
               />
@@ -528,68 +533,9 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
                 {state.board.columns} × {state.board.rows}
               </span>
             </div>
-            <div className="touch-controls">
-              <div className="d-pad">
-                {(
-                  [
-                    ["up", ArrowUp],
-                    ["left", ArrowLeft],
-                    ["down", ArrowDown],
-                    ["right", ArrowRight],
-                  ] as const
-                ).map(([d, Icon]) => (
-                  <button
-                    key={d}
-                    disabled={state.phase !== "running"}
-                    aria-label={`Move ${d}`}
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      e.currentTarget.setPointerCapture(e.pointerId);
-                      press(`pointer:${e.pointerId}`, d);
-                      focus();
-                    }}
-                    onPointerUp={(e) => release(`pointer:${e.pointerId}`)}
-                    onPointerCancel={(e) =>
-                      release(`pointer:${e.pointerId}`, true)
-                    }
-                    onLostPointerCapture={(e) =>
-                      release(`pointer:${e.pointerId}`, true)
-                    }
-                    onClick={(e) => {
-                      if (e.detail === 0) {
-                        command({ action: "steer", direction: d });
-                        focus();
-                      }
-                    }}
-                  >
-                    <Icon size={20} />
-                  </button>
-                ))}
-              </div>
-              {mode === "challenge" && (
-                <button
-                  className="touch-dash"
-                  disabled={
-                    state.phase !== "running" ||
-                    (!isHunter(state) && state.dashCooldown > 0)
-                  }
-                  onClick={() => {
-                    dash();
-                    focus();
-                  }}
-                >
-                  <Zap size={18} />
-                  Dash
-                </button>
-              )}
-            </div>
+
           </section>
           <aside className="game-sidebar extra-setup" aria-label="Round setup">
-            <AppearancePicker
-              value={state.appearance}
-              disabled={active}
-              onChange={appearance}
-            />
             {mode === "hunter" ? (
               <>
                 <label>
@@ -708,8 +654,8 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
         >
           <p className="modal-intro">
             {mode === "hunter"
-              ? "Use arrow keys, WASD or touch directions to turn your snake. It keeps moving. Queue up to two corners; reversals are rejected. Eat fruit for one extra cell and 100 points × difficulty. Avoid walls, stones and your body. The departing tail cell is safe unless growing. Fill the available board to win."
-              : `Survive ${challenge?.target ? challenge.target / 1000 : 0} seconds in ${ARENAS[meta.arena].name}. Arrow keys / WASD or held touch directions move your fruit; Space or Dash moves three cells. Capture loses. Snake crashes respawn a hunter. Close calls give a five-second speed boost. This local course has the same course and seed on every attempt.`}
+              ? "Use arrow keys, WASD or swipes to turn your snake. It keeps moving. Queue up to two corners; reversals are rejected. Eat fruit for one extra cell and 100 points × difficulty. Avoid walls, stones and your body. The departing tail cell is safe unless growing. Fill the available board to win."
+              : `Survive ${challenge?.target ? challenge.target / 1000 : 0} seconds in ${ARENAS[meta.arena].name}. Arrow keys / WASD move your fruit; swipe up, down, left or right to keep moving in that direction. Space or a double-tap after a swipe moves three cells in your last direction. Capture loses. Snake crashes respawn a hunter. Close calls give a five-second speed boost. This local course has the same course and seed on every attempt.`}
           </p>
           <p className="modal-intro">
             Esc pauses · Enter starts/resumes · R restarts. Your round pauses

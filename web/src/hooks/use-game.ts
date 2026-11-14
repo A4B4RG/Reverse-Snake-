@@ -266,6 +266,7 @@ export function useGame(ghostEnabled = false) {
         gameRef.current.phase === "paused"
       )
         return;
+      if (mode === "levels" && arena > dataRef.current.unlocked) return;
       directionRef.current = null;
       commit(
         createGame(
