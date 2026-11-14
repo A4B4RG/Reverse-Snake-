@@ -29,11 +29,23 @@ test("the full recorded fruit ghost stays below 45% opacity", async ({
   const crop = () =>
     page
       .locator("canvas")
-      .evaluate((c: HTMLCanvasElement) =>
-        Array.from(
-          c.getContext("2d")!.getImageData(0, 0, c.width, c.height).data,
-        ),
-      );
+      .evaluate((c: HTMLCanvasElement, position) => {
+        const columns = Number(c.dataset.columns),
+          rows = Number(c.dataset.rows),
+          x = ((position.x + 0.5) * c.width) / columns,
+          y = ((position.y + 0.5) * c.height) / rows,
+          radius = Math.min(c.width / columns, c.height / rows) * 0.4,
+          left = Math.ceil(x - radius),
+          top = Math.ceil(y - radius);
+        return Array.from(
+          c.getContext("2d")!.getImageData(
+            left,
+            top,
+            Math.ceil(x + radius) - left,
+            Math.ceil(y + radius) - top,
+          ).data,
+        );
+      }, position);
   await page
     .getByRole("button", { name: "Back to the jungle", exact: true })
     .dispatchEvent("click");
@@ -55,25 +67,13 @@ test("the full recorded fruit ghost stays below 45% opacity", async ({
   await page.keyboard.down("ArrowLeft");
   await page.clock.runFor(300);
   await page.keyboard.up("ArrowLeft");
-  const ghost = await crop(),
-    size = await page
-      .locator("canvas")
-      .evaluate((c: HTMLCanvasElement) => ({
-        width: c.width,
-        height: c.height,
-        columns: Number(c.dataset.columns),
-        rows: Number(c.dataset.rows),
-      }));
-  const x = ((position.x + 0.5) * size.width) / size.columns,
-    y = ((position.y + 0.5) * size.height) / size.rows,
-    radius = Math.min(size.width / size.columns, size.height / size.rows) * 0.4;
+  const ghost = await crop();
+  expect(ghost.length).toBe(baseline.length);
   const alphas: number[] = [];
-  for (let row = Math.ceil(y - radius); row < y + radius; row++)
-    for (let col = Math.ceil(x - radius); col < x + radius; col++) {
-      const i = (row * size.width + col) * 4,
-        alpha = (ghost[i] - baseline[i]) / (230 - baseline[i]);
-      if (ghost[i] > baseline[i] + 20) alphas.push(alpha);
-    }
+  for (let i = 0; i < ghost.length; i += 4) {
+    const alpha = (ghost[i] - baseline[i]) / (230 - baseline[i]);
+    if (ghost[i] > baseline[i] + 20) alphas.push(alpha);
+  }
   expect(
     alphas.length,
     "a filled fruit sprite must cover the ghost’s interior",

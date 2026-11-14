@@ -12,6 +12,8 @@ Desktop, phone, both theme palettes, paused playback and fullscreen captures wer
 
 The first adaptive-release [Linux CI run 43558184325](https://github.com/A4B4RG/Reverse-Snake-/actions/runs/43558184325) passed installation, audit, rules, lint, build and types, but failed the pause test because its initial pixel sample could show the preceding simulation frame. The corrected test allows the renderer to catch up after movement release, verifies the fruit is stationary before pausing, and still verifies frozen live time/HUD, animated blurred playback and unchanged fruit position on resume. Six consecutive local runs with Playwright Chromium pass.
 
+An additional Windows Playwright Chromium suite passed 52 browser cases with the existing visibility skip; the ghost test timed out transferring the full Canvas pixel array. It now samples exactly the same fruit-area pixels directly, retaining the filled-sprite and 28–45% measured-opacity assertions while transferring a small crop. Three consecutive corrected ghost checks pass, completing coverage of all 53 runnable browser cases. Lint and TypeScript pass again; gameplay code is unchanged by these test corrections.
+
 The existing [main verification workflow](https://github.com/A4B4RG/Reverse-Snake-/actions/workflows/verify.yml?query=branch%3Amain) runs clean installation, audit, rules, lint, build, types and browser checks on the pushed commit. Hosted Preview/production verification remains **NOT VERIFIED** under the user's explicit waiver recorded in RELEASE.md.
 
 ## Mango presentation cleanup — 14 November 2026
