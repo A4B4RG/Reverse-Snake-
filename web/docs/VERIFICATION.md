@@ -4,6 +4,8 @@
 
 ESLint, production build and TypeScript pass. The full Chrome browser suite passes **44 tests** with the existing headless tab-visibility skip. The desktop/phone/landscape viewport, fullscreen, menu, theme, replay and input checks remain passing after removal of the Mango tracking badge, side labels, board footer and setup captions. Contrast coverage now samples the remaining control text. Desktop screenshots in both themes, the phone layout and active close-call artwork were visually reviewed; the sticker's reduced text fits inside its oval. Rules and dependencies are unchanged. Hosted verification remains NOT VERIFIED under the existing waiver.
 
+[GitHub Linux CI run 43543570214](https://github.com/A4B4RG/Reverse-Snake-/actions/runs/43543570214) also passes clean install, zero-findings audit, 44 rules tests, lint, build, types and 44 browser tests with the existing visibility skip at source revision 39a182cda000c3d9b9269344377ca602647130c3.
+
 ## Click menu and mode navigation — 14 November 2026
 
 ESLint, production build and TypeScript pass. The full local Chrome browser suite passes **44 tests**, with the existing explicit headless tab-visibility skip. The menu test verifies that hovering leaves a live chase running, click/keyboard activation opens the menu and pauses gameplay, touch toggles it, and Escape/outside/close actions restore the expected focus. Route navigation verifies that Mango offers Hunter and Hunter offers Mango, without their own mode link, including during active rounds. Existing theme, replay, ghost, fullscreen, input and viewport checks pass. Updated menu screenshots show the current options. Rules and dependencies are unchanged.

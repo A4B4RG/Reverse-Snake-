@@ -1,5 +1,11 @@
 # Release evidence
 
+## Mango presentation cleanup — 14 November 2026
+
+The main Mango board omits the tracking badge, vertical side slogans and bottom status/arena footer. Mode/difficulty captions are removed, dash readiness is concise, and the sticker uses smaller bounded text. Current screenshots and product/visual reports include the updated layout.
+
+**Main delivery verified:** source 39a182cda000c3d9b9269344377ca602647130c3 is pushed. [CI run 43543570214](https://github.com/A4B4RG/Reverse-Snake-/actions/runs/43543570214) passes in 1m47s: clean install, zero-findings audit, 44 rules tests, lint, build, TypeScript and 44 browser passes with one existing headless visibility skip. This evidence update follows the verified source commit. Hosted verification remains NOT VERIFIED under the existing user waiver.
+
 ## Click menu and alternate mode links — 14 November 2026
 
 Menu now toggles through click/tap or keyboard activation; hovering leaves gameplay running. The Mango page offers the Hunter link and the Hunter page offers the Mango link, omitting their own mode from those two options. Light/dark settings and the other menu actions remain available. Local lint, production build, TypeScript and the full browser suite pass: 44 browser passes and one existing headless visibility skip. This update builds on main e6d7fdd813f476fa3723e5d4315c93c34ba4d8b6. Main delivery remains authorized and hosted verification remains NOT VERIFIED under the existing user waiver.
