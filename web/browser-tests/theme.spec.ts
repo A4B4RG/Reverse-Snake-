@@ -92,13 +92,24 @@ test("a palette switch redraws a paused board without advancing or resetting it"
   await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "paused");
 });
 
-test("hover opens and highlights options; click pins, Escape and outside click close", async ({ page }) => {
+test("hover leaves gameplay running; click and keyboard open, Escape and outside click close", async ({ page }) => {
   await page.goto("/");
   const trigger = page.getByRole("button", { name: "Open game menu" });
   await trigger.hover();
+  await expect(menu(page)).toHaveCount(0);
+  await page.getByRole("button", { name: "Let’s play" }).click();
+  await trigger.hover();
+  await expect(menu(page)).toHaveCount(0);
+  await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "running");
+  await trigger.click();
   await expect(menu(page)).toBeVisible();
+  await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "paused");
+  await expect(page.getByRole("button", { name: "Close menu" })).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "ready");
+  await expect(menu(page)).toHaveCount(0);
+  await trigger.press("Enter");
+  await expect(menu(page)).toBeVisible();
+  await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "paused");
   const light = menu(page).getByRole("button", { name: "Light", exact: true });
   const dark = menu(page).getByRole("button", { name: "Dark", exact: true });
   const background = await dark.evaluate(el => getComputedStyle(el).backgroundColor);
@@ -106,11 +117,7 @@ test("hover opens and highlights options; click pins, Escape and outside click c
   await expect.poll(() => dark.evaluate(el => getComputedStyle(el).backgroundColor)).not.toBe(background);
   await expect(light).toHaveAttribute("aria-pressed", "true");
   await page.mouse.move(5, 200);
-  await expect(menu(page)).toHaveCount(0);
-  await trigger.click();
-  await page.mouse.move(5, 200);
   await expect(menu(page)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Close menu" })).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(menu(page)).toHaveCount(0);
   await expect(trigger).toBeFocused();
@@ -122,6 +129,26 @@ test("hover opens and highlights options; click pins, Escape and outside click c
   await expect(page.locator("dialog.modal")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(trigger).toBeFocused();
+});
+
+test("the menu offers Hunter from Mango and Mango from Hunter, including during a round", async ({ page }) => {
+  await page.goto("/");
+  await openMenu(page);
+  await expect(menu(page).getByRole("link", { name: "Mango · escape the hunter" })).toHaveCount(0);
+  await expect(menu(page).getByRole("link", { name: "Hunter · control the snake" })).toBeVisible();
+  await menu(page).getByRole("link", { name: "Hunter · control the snake" }).click();
+  await expect(page).toHaveURL(/\/hunter$/);
+  await page.getByRole("button", { name: "Start round" }).click();
+  await openMenu(page);
+  await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "paused");
+  await expect(menu(page).getByRole("link", { name: "Hunter · control the snake" })).toHaveCount(0);
+  await expect(menu(page).getByRole("link", { name: "Mango · escape the hunter" })).toBeVisible();
+  await menu(page).getByRole("link", { name: "Mango · escape the hunter" }).click();
+  await page.getByRole("button", { name: "Let’s play" }).click();
+  await openMenu(page);
+  await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "paused");
+  await expect(menu(page).getByRole("link", { name: "Mango · escape the hunter" })).toHaveCount(0);
+  await expect(menu(page).getByRole("link", { name: "Hunter · control the snake" })).toBeVisible();
 });
 
 for (const unavailable of [false, true]) {

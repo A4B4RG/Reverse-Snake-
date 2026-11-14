@@ -109,7 +109,7 @@ export default function ReverseSnake() {
         <button onClick={() => openDialog("guide")}>How to play <ArrowUpRight size={14} /></button>
         <button onClick={() => openDialog("scores")}>Your best runs <ArrowUpRight size={14} /></button>
       </nav>
-      <GameMenu onOpen={pause}>
+      <GameMenu currentMode="mango" onOpen={pause}>
         <button data-menu-close onClick={() => openDialog("guide")}>How to play</button>
         <button data-menu-close onClick={() => openDialog("scores")}>Your best runs</button>
         <button data-menu-close onClick={() => openDialog("about")}>About Reverse Snake</button>

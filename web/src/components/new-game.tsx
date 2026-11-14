@@ -297,7 +297,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
           </Link>
           <Link href="/replays">Replays</Link>
         </nav>
-        <GameMenu onOpen={pause}><button data-menu-close onClick={() => { pause(); setHelp(true); }}>How to play</button></GameMenu>
+        <GameMenu currentMode={mode === "hunter" ? "hunter" : undefined} onOpen={pause}><button data-menu-close onClick={() => { pause(); setHelp(true); }}>How to play</button></GameMenu>
       </header>
       <main className="site-main">
         <section className="hero">
