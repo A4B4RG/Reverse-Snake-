@@ -8,4 +8,6 @@ Hunter reuses the same board artwork and amber snake; the mango is a collectible
 
 The page now allocates available viewport height to the board. Promotional copy is reduced where space is limited; core setup and controls remain reachable. Main controls are at least 44 px. At short board heights, overlays retain titles and primary actions and omit secondary decorative copy. Phone controls use a compact horizontal direction row. Help remains available through the menu or mode guide.
 
+Mango's board has no tracking badge, vertical side slogans or bottom status/arena footer. Mode and difficulty sections show their controls without supporting captions. The dash meter reports readiness concisely. The mango sticker uses 10 px text, a bounded text width and a small upward offset to keep the phrase inside the compact oval.
+
 Reduced motion keeps the aura and boost countdown while suppressing moving trails and bursts. No new raster artwork, external font request or downloaded sound was introduced. See ASSET_MANIFEST.md and ASSET_LICENCES.md for actual sources. The theme-light/theme-dark screenshots show both palettes and their menus at desktop and phone sizes. Screenshots under screenshots/ are evidence of particular builds rather than an exhaustive accessibility certification.

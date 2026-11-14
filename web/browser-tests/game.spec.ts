@@ -208,7 +208,7 @@ test("jungle layout, text contrast and control sizes at desktop and mobile width
       const channels = rgb.match(/[\d.]+/g)!.slice(0, 3).map(n => Number(n) / 255).map(n => n <= .04045 ? n / 12.92 : ((n + .055) / 1.055) ** 2.4);
       return channels[0] * .2126 + channels[1] * .7152 + channels[2] * .0722;
     };
-    return [".hero p", ".difficulty-caption", ".hud-stat > span"].map(selector => {
+    return [".hero p", ".control-row > span", ".hud-stat > span"].map(selector => {
       const el = document.querySelector(selector)!; const fg = luminance(getComputedStyle(el).color);
       const bg = luminance(selector.startsWith(".hud") ? "rgb(12, 41, 46)" : "rgb(28, 74, 66)");
       return (Math.max(fg, bg) + .05) / (Math.min(fg, bg) + .05);
