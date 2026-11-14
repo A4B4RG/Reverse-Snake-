@@ -70,6 +70,8 @@ GitHub: [A4B4RG/Reverse-Snake-](https://github.com/A4B4RG/Reverse-Snake-), local
 
 Local verification includes movement and qualification rules, cumulative star boundaries and persistence, power-up pickup/expiry/pause/resize, actual speed ratios, seeded power-up replay, older ruleset playback, and real mid-chase fullscreen controls. Current command results and browser evidence are recorded in [VERIFICATION.md](VERIFICATION.md); [VISUAL_DIRECTION.md](VISUAL_DIRECTION.md) describes current screenshots. Physical-device balance feedback remains pending.
 
+Verified main source/test revision `d0ae8f7bbd4de22aa50dfa5ac04fae948630b68b` passes [GitHub Linux CI](https://github.com/A4B4RG/Reverse-Snake-/actions/runs/43583761804): clean install, zero audit findings, 67 rules tests, lint, build, types and 61 browser passes with one existing headless visibility skip. Local full Chrome and repeated targeted Chromium checks also pass. Later evidence-only documentation commits retain that implementation.
+
 Online PvP needs a realtime authoritative match service; the current Vercel address can remain the frontend and a custom domain is optional. [ONLINE_PVP.md](ONLINE_PVP.md) explains rooms, synchronization, storage and a practical first release. No online service has been added. Phaser, an editor and native Android packaging remain separate work; see [technical decisions](TECHNICAL_DECISIONS.md).
 
 Updated Vercel Preview/production gameplay remains **NOT VERIFIED** under the user's explicit hosted-check waiver. A main push is not proof of the deployed version at https://reverse-snake-chi.vercel.app. Physical devices, Safari/Firefox, external player balance and a full nonvisual accessibility audit remain unverified; see [known limitations](KNOWN_LIMITATIONS.md).
