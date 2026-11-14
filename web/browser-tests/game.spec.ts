@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { fruit, closeCall } from "./helpers";
+import { fruit, closeCall, renderedBoard } from "./helpers";
 import { mkdir } from "node:fs/promises";
 
 async function openGame(page: Page) {
@@ -12,6 +12,7 @@ async function openGame(page: Page) {
 }
 
 async function start(page: Page) {
+  await renderedBoard(page);
   await page.getByRole("button", { name: "Let’s play" }).dispatchEvent("click");
   await page.clock.runFor(40);
   await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "running");

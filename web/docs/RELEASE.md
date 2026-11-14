@@ -14,6 +14,10 @@ Implementation `8bd51dbc8adea5455237d71abb1979b42053d8c1` is pushed to main. Its
 
 **Corrected main delivery verified:** source/test revision `d0ae8f7bbd4de22aa50dfa5ac04fae948630b68b` is pushed. [CI run 43583761804](https://github.com/A4B4RG/Reverse-Snake-/actions/runs/43583761804) passes clean install, zero-findings audit, 67 rules tests, lint, build, TypeScript and 61 browser tests with one existing headless visibility skip in 2m4s. This documentation update records the verified delivery.
 
+The following evidence-only push exposed an intermittent Survival boost-test setup race in [CI run 43584129597](https://github.com/A4B4RG/Reverse-Snake-/actions/runs/43584129597). Tests now settle rendered board geometry before starting the chase as well as after fullscreen. This follow-up preserves the implementation and all boost assertions; VERIFICATION.md records the setup correction and rerun evidence.
+
+The final full local Chromium suite passes **61 cases** with the existing visibility skip after that setup correction. Lint and TypeScript also pass; gameplay, rules, dependencies and retained Chrome artwork captures are unchanged.
+
 Repository: https://github.com/A4B4RG/Reverse-Snake-, branch **main**. Pre-update rollback checkpoint: `720c9d189b7320c02eb084f99450a219f2c7cb23`. Source, tests, reports, retained engines and captures are delivered through the existing main integration. The [main workflow](https://github.com/A4B4RG/Reverse-Snake-/actions/workflows/verify.yml?query=branch%3Amain) identifies each exact pushed revision and its clean-install/Linux verification.
 
 Hosted Preview/production gameplay remains **NOT VERIFIED** under the explicit instruction **“Push main; document hosted verification gap.”** The declined access is not bypassed. Source push/CI does not establish the deployed version at https://reverse-snake-chi.vercel.app. A reviewed revert on main provides source rollback; it does not restore cleared browser-local saves.

@@ -1,19 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
-import { fruit, swipe } from "./helpers";
+import { fruit, swipe, renderedBoard } from "./helpers";
 import { obstaclesFor, type Direction } from "../src/lib/game";
-import { boardForSize } from "../src/lib/board";
-
-async function renderedBoard(page: Page) {
-  await expect.poll(async () => {
-    await page.clock.runFor(20);
-    const c = await page.locator("canvas").evaluate((canvas: HTMLCanvasElement) => {
-      const r = canvas.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
-      return { width: Math.round(r.width), height: Math.round(r.height), bitmapWidth: canvas.width, bitmapHeight: canvas.height, dpr, columns: Number(canvas.dataset.columns), rows: Number(canvas.dataset.rows) };
-    });
-    const expected = boardForSize(c.width, c.height);
-    return c.columns === expected.columns && c.rows === expected.rows && c.bitmapWidth === Math.round(c.width * c.dpr) && c.bitmapHeight === Math.round(c.height * c.dpr);
-  }, { intervals: [20, 50, 100] }).toBe(true);
-}
 
 async function snakeHead(page: Page) {
   return page.locator("canvas").evaluate((canvas: HTMLCanvasElement) => {
