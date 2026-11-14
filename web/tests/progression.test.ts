@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ARENAS, createGame, step, type GameState } from "../src/lib/game";
-import { DEFAULT_DATA, readSavedData, recordRun, saveData } from "../src/lib/storage";
+import { DEFAULT_DATA, readSavedData, recordRun, recordProgress, saveData } from "../src/lib/storage";
 import { swipeDirection } from "../src/lib/input";
 import { Recorder, ReplayCursor, fingerprint, parseReplay } from "../src/lib/replay";
 import { displayRun } from "../src/lib/run-display";
@@ -19,21 +19,22 @@ test("level targets increase; fullscreen walls retain their occupied area", () =
   }
 });
 
-test("only a qualifying Levels clear unlocks the next map and survives reload", () => {
+test("a live qualified chase unlocks the next map and preserves stars through reload", () => {
   let data = { ...DEFAULT_DATA };
-  const win: GameState = { ...createGame(), phase: "won", reason: "target", score: ARENAS[0].scoreTarget };
-  assert.equal(recordRun(data, { ...win, reason: "wall" }).unlocked, 0);
-  assert.equal(recordRun(data, { ...win, phase: "lost" }).unlocked, 0);
-  assert.equal(recordRun(data, { ...win, score: win.score - 1 }).unlocked, 0);
-  assert.equal(recordRun(data, { ...win, mode: "survival" }).unlocked, 0);
-  data = recordRun(data, win);
+  const chase: GameState = { ...createGame(), phase: "running", levelCleared: true, score: ARENAS[0].scoreTarget };
+  assert.equal(recordProgress(data, { ...chase, levelCleared: false }).unlocked, 0);
+  assert.equal(recordProgress(data, { ...chase, mode: "survival" }).unlocked, 0);
+  data = recordProgress(data, chase);
   assert.equal(data.unlocked, 1);
-  assert.equal(recordRun(data, win).unlocked, 1);
+  assert.equal(recordProgress(data, chase), data);
+  data = recordProgress(data, { ...chase, score: chase.score + 300 });
+  assert.equal(data.stars[0], 2);
   const old = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
   let raw = "";
   Object.defineProperty(globalThis, "localStorage", { configurable: true, value: { getItem: () => raw, setItem: (_k: string, v: string) => { raw = v; } } });
-  try { assert(saveData(data)); assert.equal(readSavedData().unlocked, 1); }
+  try { assert(saveData(data)); assert.equal(readSavedData().unlocked, 1); assert.equal(readSavedData().stars[0], 2); }
   finally { if (old) Object.defineProperty(globalThis, "localStorage", old); else Reflect.deleteProperty(globalThis, "localStorage"); }
+  assert.equal(recordRun(data, { ...chase, phase: "lost" }).unlocked, 1);
 });
 
 test("blocked or idle movement earns no Levels score; capture beats a target", () => {

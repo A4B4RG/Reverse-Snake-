@@ -9,20 +9,22 @@ import { GameCanvas } from "./game-canvas";
 import { GardenMap, SnakeMark } from "./pixel-art";
 import { Modal } from "./modal";
 import { AppearancePicker, FruitIcon } from "./appearance-picker";
+import { useFullscreen, fullscreenTransition } from "@/hooks/use-fullscreen";
+import { LevelScoreBar } from "./level-score-bar";
 import { GameMenu } from "./game-menu";
 
 type Dialog = "guide" | "scores" | "about" | null;
 
 export default function ReverseSnake() {
   const [ghostEnabled, setGhostEnabled] = useState(false);
-  const { resize,appearance,previewRef,game, gameRef, directionRef, ghostRef, data, storageAvailable, start, pause, resume, dash, steer, clearDirection, configure, quit, toggleSound, clearScores } = useGame(ghostEnabled);
+  const { finishChase,resize,appearance,previewRef,game, gameRef, directionRef, ghostRef, data, storageAvailable, start, pause, resume, dash, steer, clearDirection, configure, quit, toggleSound, clearScores } = useGame(ghostEnabled);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [confirmClear, setConfirmClear] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenNotice, setFullscreenNotice] = useState("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const arcadeRef = useRef<HTMLElement>(null);
   const input = useRef(new GameInput());
+  const { isFullscreen, toggleFullscreen } = useFullscreen(arcadeRef, canvasRef, setFullscreenNotice);
   const arena = ARENAS[game.arena];
   const active = game.phase === "running" || game.phase === "paused";
   const focusGame = useCallback(() => requestAnimationFrame(() => canvasRef.current?.focus({ preventScroll: true })), []);
@@ -71,7 +73,7 @@ export default function ReverseSnake() {
     const keyUp = (event: KeyboardEvent) => {
       releaseInput(keyboardSource(event));
     };
-    const clear = () => { input.current.clear(); clearDirection(); };
+    const clear = () => { if (fullscreenTransition() && !document.hidden) return; input.current.clear(); clearDirection(); };
     const visibility = () => { if (document.hidden) clear(); };
     window.addEventListener("keydown", keyDown);
     window.addEventListener("keyup", keyUp);
@@ -87,22 +89,7 @@ export default function ReverseSnake() {
     if (game.phase !== "running") input.current.clear();
   }, [game.phase]);
 
-  useEffect(() => {
-    const change = () => setIsFullscreen(Boolean(document.fullscreenElement));
-    document.addEventListener("fullscreenchange", change);
-    return () => document.removeEventListener("fullscreenchange", change);
-  }, []);
-
-  const toggleFullscreen = async () => {
-    setFullscreenNotice("");
-    try {
-      if (document.fullscreenElement) await document.exitFullscreen();
-      else if (arcadeRef.current?.requestFullscreen) await arcadeRef.current.requestFullscreen();
-      else setFullscreenNotice("Fullscreen is not supported here. Try your browser’s fullscreen option.");
-    } catch { setFullscreenNotice("Fullscreen is unavailable in this browser window."); }
-  };
-
-  const nextArena = () => { configure((game.arena + 1) % ARENAS.length, game.difficulty); };
+  const nextArena = () => { if (active) finishChase(); configure((game.arena + 1) % ARENAS.length, game.difficulty); };
   const bestRuns = [...data.runs].sort((a, b) => b.score - a.score).slice(0, 5);
   const outcomeText = `You reached ${arena.scoreTarget} points. ${game.arena < ARENAS.length - 1 ? "The next map is unlocked." : "You cleared every map."}`;
 
@@ -147,7 +134,7 @@ export default function ReverseSnake() {
             <div className="hud-actions"><button className="dark-icon-button" onClick={game.phase === "paused" ? resumeRound : pause} disabled={!active} aria-label={game.phase === "paused" ? "Resume game" : "Pause game"} title="Pause (Esc)">{game.phase === "paused" ? <Play size={17}/> : <Pause size={17}/>}</button><button className="dark-icon-button" onClick={toggleFullscreen} aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"} title="Fullscreen">{isFullscreen ? <Shrink size={17} /> : <Expand size={17} />}</button></div>
           </div>
 
-          <div className="round-progress"><span>{game.mode === "levels" ? `Level ${game.arena + 1} · ` : ""}{arena.name}</span><strong>{game.mode === "levels" ? `${Math.floor(game.score)} / ${arena.scoreTarget} pts` : "Endless chase"}</strong>{game.mode === "levels" && <progress aria-label="Level score progress" max={arena.scoreTarget} value={Math.min(game.score, arena.scoreTarget)}/>}</div>
+          {game.mode === "levels" ? <LevelScoreBar arena={game.arena} name={arena.name} score={game.score} target={arena.scoreTarget} cleared={game.levelCleared} running={game.phase === "running"} onNext={game.arena < ARENAS.length - 1 && data.unlocked > game.arena ? nextArena : undefined}/> : <div className="round-progress"><span>{arena.name}</span><strong>Endless chase</strong></div>}
           <div className={`board-stage ${game.phase === "lost" ? "board-lost" : ""} ${game.boostRemaining > 0 ? "board-boosted" : ""}`} data-phase={game.phase}>
             <GameCanvas gameRef={gameRef} canvasRef={canvasRef} ghostRef={ghostRef} previewRef={previewRef} onResize={resize} onSwipe={swipe} onDash={dash} />
             {game.phase === "ready" && <div className="board-overlay ready-overlay">
@@ -158,12 +145,12 @@ export default function ReverseSnake() {
               <p className="touch-hint">Swipe to steer · Double-tap to dash</p>
               <span className="enter-hint">or press <kbd>enter ↵</kbd></span>
             </div>}
-            {game.phase === "paused" && <div className="board-overlay state-overlay pause-overlay"><div className="overlay-icon"><Pause size={26} /></div><span className="overlay-tag">TAKE A BREATHER</span><h2>Paused.</h2><p>Round paused.</p><button className="primary-button" onClick={resumeRound}>Back to the chase <Play size={18}/></button><div className="overlay-links"><button onClick={startRound}><RotateCcw size={13}/> Restart</button><button onClick={quit}><X size={13}/> End round</button></div></div>}
+            {game.phase === "paused" && <div className="board-overlay state-overlay pause-overlay"><div className="overlay-icon"><Pause size={26} /></div><span className="overlay-tag">TAKE A BREATHER</span><h2>Paused.</h2><p>Round paused.</p><button className="primary-button" onClick={resumeRound}>Back to the chase <Play size={18}/></button><div className="overlay-links"><button onClick={startRound}><RotateCcw size={13}/> Restart</button><button onClick={finishChase}><X size={13}/> End chase</button></div></div>}
             {(game.phase === "won" || game.phase === "lost") && <div className={`board-overlay state-overlay ${game.phase === "won" ? "win-overlay" : ""}`}>
-              <div className="overlay-icon">{game.phase === "won" ? <Trophy size={28}/> : <FruitIcon skin={game.appearance.fruit} />}</div><span className="overlay-tag">{game.phase === "won" ? "FOOD: 1. FOOD CHAIN: 0." : "A LITTLE TOO DELICIOUS"}</span><h2>{game.phase === "won" ? "Sweet escape." : "Well, snack."}</h2><p>{game.phase === "won" ? outcomeText : "The hunter got this one. Every great escape starts with another try."}</p>
+              <div className="overlay-icon">{game.phase === "won" ? <Trophy size={28}/> : <FruitIcon skin={game.appearance.fruit} />}</div><span className="overlay-tag">{game.phase === "won" ? "FOOD: 1. FOOD CHAIN: 0." : "A LITTLE TOO DELICIOUS"}</span><h2>{game.phase === "won" ? "Sweet escape." : game.reason === "retired" ? "Chase ended." : "Well, snack."}</h2><p>{game.phase === "won" ? outcomeText : game.reason === "retired" ? "Your run is saved." : "The hunter got this one. Every great escape starts with another try."}</p>
               <div className="result-stats"><div><strong>{Math.floor(game.score).toLocaleString()}</strong><span>POINTS</span></div><div><strong>{formatTime(game.elapsed)}</strong><span>SURVIVED</span></div></div>
-              <button className="primary-button" onClick={game.phase === "won" ? nextArena : startRound}>{game.phase === "won" ? game.arena === ARENAS.length - 1 ? "Back to the jungle" : "Next map" : "One more bite"}{game.phase === "won" ? <ArrowRight size={18}/> : <RotateCcw size={18}/>}</button>
-              <button className="text-button" onClick={game.phase === "won" ? startRound : quit}>{game.phase === "won" ? "Play this arena again" : "Back to the jungle"}</button>
+              <button className="primary-button" onClick={startRound}>{game.phase === "won" ? "Replay map" : "One more bite"}<RotateCcw size={18}/></button>
+              <button className="text-button" onClick={quit}>{game.phase === "won" ? "Back to setup" : "Back to the jungle"}</button>
             </div>}
             {game.phase === "running" && game.boostRemaining > 0 && <div className="boost-status"><Zap size={16}/><div><strong>{game.closeCallFlash > 0 ? "CLOSE CALL!" : "CANOPY RUSH"}</strong><span>2× speed · {(game.boostRemaining / 1000).toFixed(1)}s</span></div><div className="boost-track"><i style={{ width: `${game.boostRemaining / CLOSE_CALL_DURATION[game.mode] * 100}%` }}/></div></div>}
           </div>
@@ -189,15 +176,15 @@ export default function ReverseSnake() {
     </main>
 
     <div className="sr-only" role="status" aria-live="polite">{game.closeCalls > 0 ? `Close call ${game.closeCalls}. Double speed for ${CLOSE_CALL_DURATION[game.mode] / 1000} seconds.` : ""}</div>
-    <div className="sr-only" role="status" aria-live="polite">{game.phase === "won" ? `You won with ${Math.floor(game.score)} points. ${outcomeText}` : game.phase === "lost" ? `The snake caught you. You scored ${Math.floor(game.score)} points. Try again.` : game.phase === "paused" ? "Game paused." : game.phase === "running" ? "Game started. Hold arrow keys or WASD to move." : "Ready to play."}</div>
+    <div className="sr-only" role="status" aria-live="polite">{game.phase === "won" ? `You won with ${Math.floor(game.score)} points. ${outcomeText}` : game.phase === "lost" ? ` ${game.reason === "retired" ? "Chase ended." : "The snake caught you."} You scored ${Math.floor(game.score)} points. Try again.` : game.phase === "paused" ? "Game paused." : game.phase === "running" ? "Game started. Hold arrow keys or WASD to move." : "Ready to play."}</div>
 
     {dialog === "guide" && <Modal title="A guide to staying uneaten." onClose={() => setDialog(null)}>
       <p className="modal-intro">Forget everything you know about Snake. You control the fruit. Earn points through safe movement. Reach each map’s target to unlock the next level. In Survival, outlast the hunter.</p>
-      <div className="guide-steps"><div><span className="guide-icon"><FruitIcon skin={game.appearance.fruit}/></span><div><h3>01. You move. It follows.</h3><p>Hold <strong>WASD or the arrow keys</strong> to move. Release to stop. On a phone, swipe up, down, left or right on the board to keep moving in that direction. Swipe again to turn. Walls and hedges stop you; touching any part of the snake ends the round.</p></div></div><div><span className="guide-icon"><Route size={26}/></span><div><h3>02. Bait. Turn. Escape.</h3><p>The snake aims at you, then commits to a straight lunge. Move away mid-lunge to lure it into a wall, hedge, or its own body. It can’t turn straight back on itself.</p></div></div><div><span className="guide-icon"><Zap size={26}/></span><div><h3>03. Keep a little in reserve.</h3><p>Press <strong>Space</strong> or double-tap the board after a swipe to burst three cells in your last direction. It recharges in four seconds. Dashing won’t let you pass through the snake or hedges.</p></div></div><div><span className="guide-icon"><Trophy size={26}/></span><div><h3>04. Unlock the next map.</h3><p>Reach <strong>{arena.scoreTarget} points</strong> to clear this level. Successful moves earn points; standing still or moving into a wall earns none. The snake shrinks as your score grows, and crashes bring a new hunter. Survival is endless and scores time survived. Harder modes multiply your points.</p></div></div><div><span className="guide-icon"><Sprout size={26}/></span><div><h3>05. Turn a close call into a rush.</h3><p>Move safely away from a cell directly beside the snake’s head for <strong>2× movement speed</strong>: two seconds in Levels, five in Survival. Every new dodge refreshes the full timer with no cooldown. Look for the turquoise leaf trail and rush timer. Pausing freezes the boost.</p></div></div></div>
+      <div className="guide-steps"><div><span className="guide-icon"><FruitIcon skin={game.appearance.fruit}/></span><div><h3>01. You move. It follows.</h3><p>Hold <strong>WASD or the arrow keys</strong> to move. Release to stop. On a phone, swipe up, down, left or right on the board to keep moving in that direction. Swipe again to turn. Walls and hedges stop you; touching any part of the snake ends the round.</p></div></div><div><span className="guide-icon"><Route size={26}/></span><div><h3>02. Bait. Turn. Escape.</h3><p>The snake aims at you, then commits to a straight lunge. Move away mid-lunge to lure it into a wall, hedge, or its own body. It can’t turn straight back on itself.</p></div></div><div><span className="guide-icon"><Zap size={26}/></span><div><h3>03. Keep a little in reserve.</h3><p>Press <strong>Space</strong> or double-tap the board after a swipe to burst three cells in your last direction. It recharges in four seconds. Dashing won’t let you pass through the snake or hedges.</p></div></div><div><span className="guide-icon"><Trophy size={26}/></span><div><h3>04. Unlock the next map.</h3><p>Reach <strong>{arena.scoreTarget} points</strong> to unlock the next map while the chase continues. Successful moves earn points; standing still or moving into a wall earns none. Keep scoring for stars at +100, +300 and above +700 points. The snake shrinks as your score grows, and crashes bring a new hunter. Survival is endless and scores time survived. Harder modes multiply your points.</p></div></div><div><span className="guide-icon"><Sprout size={26}/></span><div><h3>05. Turn a close call into a rush.</h3><p>Move safely away from a cell directly beside the snake’s head for <strong>2× movement speed</strong>: two seconds in Levels, five in Survival. Every new dodge refreshes the full timer with no cooldown. Look for the turquoise leaf trail and rush timer. Pausing freezes the boost.</p></div></div></div>
       <div className="guide-footnote"><Pause size={16}/><span><strong>Esc</strong> pauses. <strong>R</strong> restarts. Changing tabs pauses automatically.</span></div><button className="modal-primary" onClick={() => setDialog(null)}>Got it. Stay uneaten. <Check size={18}/></button>
     </Modal>}
 
-    {dialog === "scores" && <Modal title="Your little hall of fame." onClose={() => { setDialog(null); setConfirmClear(false); }}><p className="modal-intro">Your best runs, saved in this browser.</p><div className="lifetime-stats"><div><strong>{data.best.toLocaleString()}</strong><span>BEST SCORE</span></div><div><strong>{data.attempts}</strong><span>COMPLETED RUNS</span></div><div><strong>{data.wins}</strong><span>GREAT ESCAPES</span></div></div>{bestRuns.length ? <ol className="score-list">{bestRuns.map((run, index) => <li key={run.id}><span className="rank">0{index + 1}</span><div><strong>{ARENAS[run.arena].name}</strong><span>{run.mode === "survival" ? "Survival" : "Levels"} · {DIFFICULTIES[run.difficulty].label} · {formatTime(run.elapsed)} · {run.won ? "Escaped" : "Eaten"} · {run.closeCalls} close calls</span></div><strong>{run.score.toLocaleString()} <small>pts</small></strong>{run.won && <Trophy size={16}/>}</li>)}</ol> : <div className="empty-scores"><Trophy size={34}/><h3>Greatness starts with a first bite.</h3><p>Finish a round and your score will appear here.</p></div>}<p className="score-note">10 points per second. Level escape bonus starts at 1,000. Survival scores time.<br/>Normal earns 1.5× points. Hard earns 2× points. Abandoned rounds aren’t recorded.</p>{data.attempts > 0 && <div className="clear-scores">{confirmClear ? <><span>Clear all saved runs and your personal best?</span><div><button onClick={() => { clearScores(); setConfirmClear(false); }}>Yes, clear scores</button><button onClick={() => setConfirmClear(false)}>Keep my scores</button></div></> : <button onClick={() => setConfirmClear(true)}>Clear local scores</button>}</div>}</Modal>}
+    {dialog === "scores" && <Modal title="Your little hall of fame." onClose={() => { setDialog(null); setConfirmClear(false); }}><p className="modal-intro">Your best runs, saved in this browser.</p><div className="lifetime-stats"><div><strong>{data.best.toLocaleString()}</strong><span>BEST SCORE</span></div><div><strong>{data.attempts}</strong><span>COMPLETED RUNS</span></div><div><strong>{data.wins}</strong><span>GREAT ESCAPES</span></div></div>{bestRuns.length ? <ol className="score-list">{bestRuns.map((run, index) => <li key={run.id}><span className="rank">0{index + 1}</span><div><strong>{ARENAS[run.arena].name}</strong><span>{run.mode === "survival" ? "Survival" : "Levels"} · {DIFFICULTIES[run.difficulty].label} · {formatTime(run.elapsed)} · {run.won ? "Escaped" : "Eaten"} · {run.closeCalls} close calls</span></div><strong>{run.score.toLocaleString()} <small>pts</small></strong>{run.won && <Trophy size={16}/>}</li>)}</ol> : <div className="empty-scores"><Trophy size={34}/><h3>Greatness starts with a first bite.</h3><p>Finish a round and your score will appear here.</p></div>}<p className="score-note">Levels: 1 point per safe cell. Survival: 10 points per second.<br/>Normal earns 1.5× points. Hard earns 2× points. Abandoned rounds aren’t recorded.</p>{data.attempts > 0 && <div className="clear-scores">{confirmClear ? <><span>Clear all saved runs and your personal best?</span><div><button onClick={() => { clearScores(); setConfirmClear(false); }}>Yes, clear scores</button><button onClick={() => setConfirmClear(false)}>Keep my scores</button></div></> : <button onClick={() => setConfirmClear(true)}>Clear local scores</button>}</div>}</Modal>}
 
     {dialog === "about" && <Modal title="A classic, from the other side." onClose={() => setDialog(null)}><div className="about-art"><SnakeMark/><span>→</span><FruitIcon skin={game.appearance.fruit}/></div><p className="modal-intro">Reverse Snake began as a Python and Kivy prototype with one question: what if you were the food?</p><p className="about-copy">Ten maps on a board that fits your screen. Choose your fruit and snake design, escape the hunter or control it yourself. Opponents learn from your moves in this browser.</p><p className="score-note"><a href="/third-party-notices.txt">Font and icon licence notices →</a></p><div className="about-tags"><span><Sprout size={14}/>{ARENAS.length} maps</span><span><Zap size={14}/>3 difficulties</span><span><Heart size={14}/>Made to play</span></div><button className="modal-primary" onClick={() => setDialog(null)}>Back to the jungle <ArrowRight size={18}/></button></Modal>}
   </>;

@@ -5,6 +5,7 @@ The complete-build specification supplied on 14 November governs scope. Existing
 | Priority | Work | State and completion evidence |
 | --- | --- | --- |
 | Delivered | Wild Heart Levels idle-start defect | Fixed; all 30 idle rules cases and three real browser difficulty regressions pass. Hosted check waived by the user. |
+| Delivered | Continuous stars, Hunter modes/powers and fullscreen control | Targets grant saved access without ending play; best star ratings persist. Hunter Levels/Survival, relative speed ratios, lightning/Stun pickups and input-preserving fullscreen are implemented and checked. |
 | Delivered | Saved named character choices, ten maps and mobile gestures | One Menu option pair persists; score gates unlock successive Levels maps. Complex wall footprints retain fullscreen density. Swipes steer; double-tap dashes; there is no touch pad or Dash button. Rules and real-input progression checks pass. |
 | Delivered | Single viewport | Final main-layout checks pass at 12 viewport sizes; Hunter/Challenge phone and short-landscape checks also pass. |
 | Delivered | Hunter / local Challenge / replay | Implemented behind separate routes; rules, storage, replay/ghost and browser checks pass. |

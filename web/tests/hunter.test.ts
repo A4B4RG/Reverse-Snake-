@@ -28,9 +28,9 @@ test("Hunter rejects reversals and buffers two successive corners", () => {
   assert.deepEqual(turnHunter(s, "left"), s);
   s = turnHunter(turnHunter(s, "up"), "left");
   assert.deepEqual(s.turns, ["up", "left"]);
-  for (let i = 0; i < 10; i++) s = hunterStep(s);
+  for (let i = 0; i < 5; i++) s = hunterStep(s);
   assert.equal(s.direction, "up");
-  for (let i = 0; i < 10; i++) s = hunterStep(s);
+  for (let i = 0; i < 5; i++) s = hunterStep(s);
   assert.equal(s.direction, "left");
 });
 test("Hunter grows on food, scores separately and resolves wall collisions", () => {

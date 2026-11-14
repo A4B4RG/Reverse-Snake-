@@ -1,5 +1,19 @@
 # Verification
 
+## Continuous chases, stars and Hunter upgrades — 14 November 2026
+
+Version **1.4.0 / orchard-5** passes **67 rules tests**, production build, ESLint, TypeScript and full dependency audit with **zero vulnerabilities**. Dependency versions are unchanged; only the two root version fields change in the lockfile.
+
+The final full Chrome production suite passes **61 browser tests**, with one existing explicit headless tab-visibility skip. The separate blur-event pause test passes. Real keyboard movement reaches the Levels target without ending the chase, saves the next-map unlock, and selects that map. Continued Easy movement visibly earns a star; Pause → End chase saves the run, presents one Next map button, and retains the rating after reload. The Normal progression test allows two extra movement intervals because an edge turn can consume a blocked interval; it still requires a score of at least 150, a running chase and a saved unlock.
+
+Four mid-chase fullscreen checks cover Food/Hunter with keyboard/swipe steering on both entry and exit. They require native fullscreen state, restored Canvas focus, continuing movement and a running round. Hunter Levels locks later maps; Survival freely selects all ten. Both collectible types render during real play. Existing Wild Heart idle/chase regressions, input ownership, boosts, all-mode deterministic replay, learning, ghost/pause rendering, themes, contrast and twelve single-viewport cases pass.
+
+Rules coverage checks cumulative stars at target +100, +300 and strictly above +700; immediate qualification and capture precedence; progress retained through weaker attempts; all six base movement ratios; power-up collection, pause, expiry and legal resizing; a seeded real pickup with exact replay after pause/resize/end; and orchard-4 playback with the earlier rules. Retained orchard-4 source snapshots differ from the preceding main engine only in relocated imports.
+
+Current star, Hunter power-up, desktop/phone, theme, pause and fullscreen captures were visually reviewed from local production screenshots. Physical devices, Safari/Firefox and genuine headed tab visibility remain unverified. Hosted Vercel Preview/production gameplay remains **NOT VERIFIED** under the existing user waiver. The [main workflow](https://github.com/A4B4RG/Reverse-Snake-/actions/workflows/verify.yml?query=branch%3Amain) runs clean installation and the full suite on the delivered source.
+
+The sections below preserve prior verification evidence.
+
 ## Maps, saved choices and swipe controls — 14 November 2026
 
 Version 1.3.0 / orchard-4 passes **59 rules tests**, production build, ESLint, TypeScript and full dependency audit with **zero vulnerabilities**. Dependency versions are unchanged; package and lockfile version fields are 1.3.0.

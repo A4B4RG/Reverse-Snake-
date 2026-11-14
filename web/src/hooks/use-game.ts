@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  endChase,
   createGame,
   resizeGame,
   dash as dashGame,
@@ -17,6 +18,7 @@ import {
   DEFAULT_DATA,
   readSavedData,
   recordRun,
+  recordProgress,
   saveData,
   type SavedData,
 } from "@/lib/storage";
@@ -38,6 +40,7 @@ import {
   saveAppearance,
   type Appearance,
 } from "@/lib/appearance";
+import { fullscreenTransition } from "./use-fullscreen";
 import type { Board } from "@/lib/board";
 
 export function useGame(ghostEnabled = false) {
@@ -79,6 +82,11 @@ export function useGame(ghostEnabled = false) {
     setData(next);
     setStorageAvailable(saveData(next));
   }, []);
+
+  const awardProgress = useCallback((next: GameState) => {
+    const earned = recordProgress(dataRef.current, next);
+    if (earned !== dataRef.current) persist(earned);
+  }, [persist]);
 
   const endRound = useCallback(
     (next: GameState) => {
@@ -132,6 +140,7 @@ export function useGame(ghostEnabled = false) {
           });
           const next = step(gameRef.current, directionRef.current);
           gameRef.current = next;
+          awardProgress(next);
           if (ghostCursor.current) {
             const state = ghostCursor.current.advance();
             ghostRef.current =
@@ -159,6 +168,7 @@ export function useGame(ghostEnabled = false) {
     };
     frame = requestAnimationFrame(animate);
     const suspend = () => {
+      if (fullscreenTransition() && !document.hidden) return;
       directionRef.current = null;
       if (gameRef.current.phase === "running") {
         previewRef.current =
@@ -185,7 +195,7 @@ export function useGame(ghostEnabled = false) {
       audio.close();
       audioRef.current = null;
     };
-  }, [commit, endRound, loadSaved]);
+  }, [commit, endRound, loadSaved, awardProgress]);
 
   const start = useCallback(() => {
     loadSaved();
@@ -251,7 +261,16 @@ export function useGame(ghostEnabled = false) {
     });
     audioRef.current?.play("dash");
     commit(next);
+    awardProgress(next);
     if (next.phase === "lost") endRound(next);
+  }, [commit, endRound, awardProgress]);
+
+  const finishChase = useCallback(() => {
+    const next = endChase(gameRef.current);
+    if (next === gameRef.current) return;
+    recorderRef.current?.add({ action: "finish" });
+    commit(next);
+    endRound(next);
   }, [commit, endRound]);
 
   const configure = useCallback(
@@ -361,6 +380,7 @@ export function useGame(ghostEnabled = false) {
     [commit],
   );
   return {
+    finishChase,
     resize,
     appearance,
     previewRef,

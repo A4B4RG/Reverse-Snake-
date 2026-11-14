@@ -106,6 +106,11 @@ export async function closeCall(page: Page, mode: GameMode = "levels") {
     "the measured arena must allow an adjacent-head dodge",
   ).not.toBeNull();
   await page.clock.runFor(s.elapsed - initial.elapsed);
+  const actual = Number(await page.locator("canvas").getAttribute("data-elapsed"));
+  if (actual < s.elapsed) await page.clock.runFor(s.elapsed - actual);
+  const aligned = Number(await page.locator("canvas").getAttribute("data-elapsed"));
+  expect(aligned, "the real chase has reached the planned lunge").toBeGreaterThanOrEqual(s.elapsed);
+  expect(aligned).toBeLessThan(s.elapsed + 100);
   const key = `Arrow${heading![0].toUpperCase()}${heading!.slice(1)}`;
   await page.keyboard.down(key);
   await page.keyboard.press("Space");

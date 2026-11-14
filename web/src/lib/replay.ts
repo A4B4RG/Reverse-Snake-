@@ -1,5 +1,6 @@
 import {
   ARENAS,
+  endChase,
   createGame,
   resizeGame,
   dash,
@@ -12,6 +13,7 @@ import {
 } from "./game";
 import { CHALLENGES, challengeStep, createChallenge } from "./challenge";
 import {
+  endHunt,
   createHunter,
   resizeHunter,
   hunterStep,
@@ -28,9 +30,12 @@ import * as legacyChallenge from "./legacy/challenge";
 import * as orchardGame from "./legacy/orchard3/game";
 import * as orchardHunter from "./legacy/orchard3/hunter";
 import * as orchardChallenge from "./legacy/orchard3/challenge";
-type PreviousEngine = boolean | "orchard3";
-export const GAME_VERSION = "1.3.0";
-export const RULESET = "orchard-4";
+import * as orchard4Game from "./legacy/orchard4/game";
+import * as orchard4Hunter from "./legacy/orchard4/hunter";
+import * as orchard4Challenge from "./legacy/orchard4/challenge";
+type PreviousEngine = boolean | "orchard3" | "orchard4";
+export const GAME_VERSION = "1.4.0";
+export const RULESET = "orchard-5";
 export type RunMode = GameMode | "hunter" | "challenge";
 export type RunMeta = {
   mode: RunMode;
@@ -38,6 +43,7 @@ export type RunMeta = {
   difficulty: Difficulty;
   seed: number;
   challenge?: string;
+  hunterMode?: GameMode;
   board?: Board;
   learning?: Learning;
   appearance?: Appearance;
@@ -57,6 +63,7 @@ export function isRunMeta(value: unknown): value is RunMeta {
   )
     return false;
   if (
+    (m.hunterMode !== undefined && (m.mode !== "hunter" || !["levels", "survival"].includes(m.hunterMode))) ||
     (m.board !== undefined && !validBoard(m.board)) ||
     (m.learning !== undefined && !validLearning(m.learning)) ||
     (m.appearance !== undefined && !validAppearance(m.appearance))
@@ -77,7 +84,7 @@ export type RunState = GameState | HunterState;
 export type Command =
   | { action: "step"; direction: Direction | null; count: number }
   | { action: "steer" | "dash"; direction: Direction | null }
-  | { action: "clear" | "pause" | "resume" }
+  | { action: "clear" | "pause" | "resume" | "finish" }
   | { action: "resize"; board: Board };
 export type Replay = {
   format: 1 | 2;
@@ -99,6 +106,14 @@ const direction = (v: unknown): v is Direction | null =>
   v === null || ["up", "down", "left", "right"].includes(v as string);
 export const isHunter = (s: RunState): s is HunterState => "turns" in s;
 export function createRun(meta: RunMeta, legacy: PreviousEngine = false): RunState {
+  if (legacy === "orchard4") {
+    const s = meta.mode === "hunter"
+      ? orchard4Hunter.createHunter(meta.arena, meta.difficulty, meta.seed, meta.board, meta.learning, meta.appearance)
+      : meta.mode === "challenge"
+        ? orchard4Challenge.createChallenge(orchard4Challenge.CHALLENGES.find(c => c.id === meta.challenge)!, meta.board, meta.learning, meta.appearance)
+        : orchard4Game.createGame(meta.arena, meta.difficulty, meta.mode, meta.board, meta.learning, meta.appearance);
+    return { ...s, phase: "running" } as RunState;
+  }
   if (legacy === "orchard3") {
     const s = meta.mode === "hunter"
       ? orchardHunter.createHunter(meta.arena, meta.difficulty, meta.seed, meta.board, meta.learning, meta.appearance)
@@ -127,6 +142,7 @@ export function createRun(meta: RunMeta, legacy: PreviousEngine = false): RunSta
         meta.board,
         meta.learning,
         meta.appearance,
+        meta.hunterMode ?? "levels",
       ),
       phase: "running",
     };
@@ -155,6 +171,21 @@ export function applyCommand(
   meta: RunMeta,
   legacy: PreviousEngine = false,
 ): RunState {
+  if (legacy === "orchard4") {
+    if (command.action === "resize") return (isHunter(s)
+      ? orchard4Hunter.resizeHunter(s as orchard4Hunter.HunterState, command.board)
+      : orchard4Game.resizeGame(s as orchard4Game.GameState, command.board)) as RunState;
+    if (command.action === "step") return (isHunter(s)
+      ? orchard4Hunter.hunterStep(s as orchard4Hunter.HunterState)
+      : meta.mode === "challenge"
+        ? orchard4Challenge.challengeStep(s as orchard4Game.GameState, command.direction, orchard4Challenge.CHALLENGES.find(c => c.id === meta.challenge)!)
+        : orchard4Game.step(s as orchard4Game.GameState, command.direction)) as RunState;
+    if (command.action === "steer" && command.direction) return (isHunter(s)
+      ? orchard4Hunter.turnHunter(s as orchard4Hunter.HunterState, command.direction)
+      : orchard4Game.steer(s as orchard4Game.GameState, command.direction)) as RunState;
+    if (command.action === "dash") return isHunter(s) ? s : orchard4Game.dash(s as orchard4Game.GameState, command.direction) as RunState;
+    legacy = false;
+  }
   if (legacy === "orchard3") {
     if (command.action === "resize") return (isHunter(s)
       ? orchardHunter.resizeHunter(s as orchardHunter.HunterState, command.board)
@@ -170,6 +201,7 @@ export function applyCommand(
     if (command.action === "dash") return isHunter(s) ? s : orchardGame.dash(s as orchardGame.GameState, command.direction) as RunState;
     legacy = false;
   }
+  if (command.action === "finish") return isHunter(s) ? endHunt(s) : endChase(s);
   if (command.action === "resize")
     return legacy
       ? s
@@ -243,7 +275,7 @@ export function applyCommand(
     };
   return s;
 }
-export function fingerprint(s: RunState): string {
+export function fingerprint(s: unknown): string {
   const raw = JSON.stringify(s);
   let value = 2166136261;
   for (let i = 0; i < raw.length; i++)
@@ -274,7 +306,7 @@ export class Recorder {
     else this.commands.push({ ...command });
     if (this.commands.length > MAX_GROUPS) this.overflow = true;
   }
-  finish(s: RunState, preview = false): Replay | null {
+  finish(s: Pick<RunState, "phase" | "elapsed" | "score">, preview = false): Replay | null {
     if (
       this.overflow ||
       (!preview && s.phase !== "won" && s.phase !== "lost") ||
@@ -310,10 +342,11 @@ export function parseReplay(value: unknown): Replay | null {
       !(
         (r.format === 1 && r.version === "1.1.0" && r.ruleset === "canopy-2") ||
         (r.format === 2 && r.version === "1.2.0" && r.ruleset === "orchard-3") ||
+        (r.format === 2 && r.version === "1.3.0" && r.ruleset === "orchard-4") ||
         (r.format === 2 && r.version === GAME_VERSION && r.ruleset === RULESET)
       ) ||
       !isRunMeta(m) ||
-      (r.ruleset !== RULESET && m.arena >= 5) ||
+      (["canopy-2", "orchard-3"].includes(r.ruleset) && m.arena >= 5) ||
       (r.preview !== undefined && typeof r.preview !== "boolean") ||
       !m ||
       !["levels", "survival", "hunter", "challenge"].includes(m.mode) ||
@@ -362,7 +395,7 @@ export function parseReplay(value: unknown): Replay | null {
           return null;
       } else if (c.action === "resize") {
         if (r.format !== 2 || !validBoard(c.board)) return null;
-      } else if (!["clear", "pause", "resume"].includes(c.action)) return null;
+      } else if (!(["clear", "pause", "resume"].includes(c.action) || (r.ruleset === RULESET && c.action === "finish"))) return null;
     }
     return r;
   } catch {
@@ -377,7 +410,7 @@ export class ReplayCursor {
   valid = true;
   engine: PreviousEngine;
   constructor(public replay: Replay) {
-    this.engine = replay.format === 1 ? true : replay.ruleset === "orchard-3" ? "orchard3" : false;
+    this.engine = replay.format === 1 ? true : replay.ruleset === "orchard-3" ? "orchard3" : replay.ruleset === "orchard-4" ? "orchard4" : false;
     this.state = createRun(replay.meta, this.engine);
   }
   advance() {
@@ -448,7 +481,8 @@ export function compatibleGhost(r: Replay, m: RunMeta) {
     r.meta.arena === m.arena &&
     r.meta.difficulty === m.difficulty &&
     r.meta.seed === m.seed &&
-    r.meta.challenge === m.challenge
+    r.meta.challenge === m.challenge &&
+    r.meta.hunterMode === m.hunterMode
   );
 }
 

@@ -589,6 +589,20 @@ body { height: 100dvh; display: flex; flex-direction: column; padding: env(safe-
 .round-progress strong { font-weight:500; }
 .round-progress progress { grid-column:1 / -1;width:100%;height:4px;accent-color:var(--rush); }
 .touch-hint { display:none; }
+.level-progress { gap:4px 10px; }
+.star-score-track { grid-column:1 / -1; position:relative; height:20px; margin-inline:8px; }
+.star-score-track progress { position:absolute; top:8px; width:100%; height:4px; }
+.score-star { position:absolute; top:0; transform:translateX(-50%); color:var(--muted); line-height:0; padding:2px; background:var(--panel); border-radius:50%; }
+.score-star.earned { color:#aa6200; }
+.score-star.earned svg { fill:#ffc55e; }
+.unlock-marker { position:absolute; top:5px; height:10px; width:2px; background:var(--muted); }
+.unlock-marker.earned { background:var(--rush); }
+.level-milestone { font-size:10px; align-self:center; }
+.level-next { min-height:44px; padding:4px 10px; background:var(--rush); color:var(--paper); border:0; border-radius:8px; font-size:11px; }
+.level-next:disabled { opacity:.45; cursor:default; }
+.hunter-power-status { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); display:flex; gap:8px; flex-wrap:wrap; justify-content:center; z-index:2; pointer-events:none; }
+.hunter-power-status span { display:flex; align-items:center; gap:5px; padding:6px 10px; background:var(--panel); color:var(--forest); border:1px solid var(--line); border-radius:10px; font-size:12px; white-space:nowrap; }
+:root[data-theme="dark"] .score-star.earned { color:#ffc55e; }
 @media (min-width:901px) and (min-height:961px) { .arena-dots { display:grid;grid-template-columns:repeat(5,minmax(44px,1fr));gap:2px 6px; } }
 @media (pointer:coarse) { .touch-hint { display:block; } }
 @media (max-width:900px), (max-height:500px) {

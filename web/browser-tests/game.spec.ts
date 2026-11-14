@@ -139,10 +139,9 @@ test("reduced motion retains the boost timer and safe keyboard control", async (
   await page.emulateMedia({ reducedMotion: "reduce" });
   await openGame(page); await start(page);
   await closeCall(page);
-  await page.clock.runFor(80);
   await expect(page.locator(".boost-status")).toContainText("CLOSE CALL!");
   expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(true);
-  await expect(page.locator("[role='status']").first()).toContainText("Double speed for 2 seconds");
+  await expect(page.locator(".sr-only[role='status']").first()).toContainText("Double speed for 2 seconds");
 });
 
 test("jungle layout, text contrast and control sizes at desktop and mobile widths", async ({ page }) => {

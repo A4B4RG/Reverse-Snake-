@@ -1,5 +1,21 @@
 # Release evidence
 
+## Continuous chase release 1.4.0 — 14 November 2026
+
+Reaching a Levels score target now saves the next-map unlock while the chase keeps running and scoring. The score bar marks cumulative stars at target +100, +300 and strictly above +700. Best ratings persist across later captures and lower scores. Next map explicitly records the current chase before selecting the next map; Pause offers End chase. The progress control keeps a stable height when it becomes available. Fullscreen entry/exit restores Canvas focus and preserves keyboard/swipe control in both player roles while genuine tab suspension still pauses.
+
+Food Easy gives the food twice the snake's speed, Normal equal speed, and Hard a faster snake. Hunter Easy makes food half the snake's speed, Normal 25% slower, and Hard equal speed. Evasion now uses full route distances and recent-cell penalties to avoid short repeated movements. Hunter has separate saved Levels progression and freely selectable Survival maps. Collect lightning for 2× snake speed for 10 active seconds or a snowflake to freeze food for 5 active seconds; items replenish after eight active seconds. Pause freezes timers, and resize preserves effects and queued Hunter turns.
+
+New version 1.4.0 / orchard-5 recordings capture voluntary endings, Hunter modes and seeded power-up state. Retained orchard-4, orchard-3 and canopy-2 engines preserve earlier recordings. Current scenario/mode/technical reports and production screenshots accompany the release; historical root PROJECT_STATUS.md is preserved. No dependencies or online infrastructure were added.
+
+Final local checks: **67 rules tests**, **61 Chrome browser passes**, one existing headless tab-visibility skip, production build, lint, types and **zero audit findings**. VERIFICATION.md records the new coverage and the unchanged physical-device/other-browser limits.
+
+Repository: https://github.com/A4B4RG/Reverse-Snake-, branch **main**. Pre-update rollback checkpoint: `720c9d189b7320c02eb084f99450a219f2c7cb23`. Source, tests, reports, retained engines and captures are delivered through the existing main integration. The [main workflow](https://github.com/A4B4RG/Reverse-Snake-/actions/workflows/verify.yml?query=branch%3Amain) identifies each exact pushed revision and its clean-install/Linux verification.
+
+Hosted Preview/production gameplay remains **NOT VERIFIED** under the explicit instruction **“Push main; document hosted verification gap.”** The declined access is not bypassed. Source push/CI does not establish the deployed version at https://reverse-snake-chi.vercel.app. A reviewed revert on main provides source rollback; it does not restore cleared browser-local saves.
+
+The sections below preserve earlier release evidence.
+
 ## Maps and mobile controls release 1.3.0 — 14 November 2026
 
 Ten maps now provide increasing Levels score targets and saved sequential unlocks. Levels points come from moved cells, so idle/blocked play cannot unlock a map; crashed hunters respawn until the objective is met. Complex wall footprints retain density as fullscreen adds cells. Named Food character / Snake design dropdowns appear once in Menu and persist across rounds/modes. Compact layouts put setup in Menu and leave most space for the board. Swipes steer in their matching direction, double-tap after a swipe dashes in the last direction, and on-screen arrow/Dash buttons are removed. Desktop keyboard controls remain.

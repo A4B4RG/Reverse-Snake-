@@ -57,7 +57,7 @@ test("all ten maps can be played in Survival and the complex map expands in full
   await page.getByRole("button", { name: "Exit fullscreen" }).click();
 });
 
-test("real safe movement clears the score gate and unlocks the next map persistently", async ({ page }) => {
+test("real safe movement unlocks the next map without stopping the chase", async ({ page }) => {
   await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
   await page.goto("/"); await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   await page.clock.pauseAt(new Date("2026-11-14T00:00:01Z"));
@@ -65,18 +65,53 @@ test("real safe movement clears the score gate and unlocks the next map persiste
   await page.getByRole("button", { name: "Let’s play" }).dispatchEvent("click"); await page.clock.runFor(40);
   const p = await fruit(page), b = await page.locator("canvas").evaluate(c => ({ columns: Number(c.dataset.columns), rows: Number(c.dataset.rows) }));
   const route = [["Left", p.x], ["Up", p.y], ["Right", b.columns - 1], ["Down", b.rows - 1], ["Left", b.columns - 1], ["Up", b.rows - 1]] as const;
-  let remaining = 100;
+  let remaining = 102;
   for (const [d, cells] of route) {
     const count = Math.min(remaining, cells);
     await page.keyboard.down(`Arrow${d}`); await page.clock.runFor(count * 100); await page.keyboard.up(`Arrow${d}`);
     remaining -= count; if (!remaining) break;
   }
   await page.clock.runFor(40);
-  await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "won");
+  await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "running");
+  await expect.poll(async () => Number((await page.locator(".round-progress strong").innerText()).replace(/[^\d]/g, ""))).toBeGreaterThanOrEqual(150);
+  await expect(page.locator(".level-milestone")).toContainText("Next map unlocked");
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("reverse-snake:v1")!).unlocked)).toBe(1);
   await page.getByRole("button", { name: "Next map" }).dispatchEvent("click"); await page.clock.runFor(40);
   await expect(page.locator(".round-progress")).toContainText("Root Divide");
   await page.reload(); await page.clock.runFor(100);
   await expect(page.getByRole("button", { name: "Choose Root Divide", exact: true })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Choose Orchard Grove", exact: true })).toBeDisabled();
+});
+
+test("continuing an Easy chase earns a visible star and saves the rating", async ({ page }) => {
+  await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
+  await page.goto("/"); await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
+  await page.clock.pauseAt(new Date("2026-11-14T00:00:01Z"));
+  await page.getByRole("button", { name: "Easy", exact: true }).dispatchEvent("click");
+  await page.getByRole("button", { name: "Let’s play" }).dispatchEvent("click"); await page.clock.runFor(40);
+  const p = await fruit(page), b = await page.locator("canvas").evaluate(c => ({ columns: Number(c.dataset.columns), rows: Number(c.dataset.rows) }));
+  const perimeter = [["Right", b.columns - 1], ["Down", b.rows - 1], ["Left", b.columns - 1], ["Up", b.rows - 1]] as const;
+  const route = [["Left", p.x], ["Up", p.y], ...Array.from({ length: 5 }, () => perimeter).flat()] as const;
+  let remaining = 250;
+  for (const [d, cells] of route) {
+    const count = Math.min(remaining, cells);
+    await page.keyboard.down(`Arrow${d}`); await page.clock.runFor(count * 100); await page.keyboard.up(`Arrow${d}`);
+    remaining -= count; if (!remaining) break;
+  }
+  await page.clock.runFor(40);
+  await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "running");
+  await expect(page.locator(".score-star.earned")).toHaveCount(1);
+  const progress = await page.evaluate(() => JSON.parse(localStorage.getItem("reverse-snake:v1")!));
+  expect(progress.unlocked).toBe(1); expect(progress.stars[0]).toBe(1);
+  await page.screenshot({ path: "docs/screenshots/level-star-earned.png" });
+  await page.keyboard.press("Escape"); await page.clock.runFor(40);
+  await page.getByRole("button", { name: "End chase", exact: true }).dispatchEvent("click");
+  await page.clock.runFor(40);
+  await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "won");
+  await expect(page.getByRole("button", { name: "Next map", exact: true })).toHaveCount(1);
+  await page.getByRole("button", { name: "Next map", exact: true }).dispatchEvent("click");
+  await page.clock.runFor(40);
+  await expect(page.locator(".round-progress")).toContainText("Root Divide");
+  await page.reload(); await page.clock.runFor(100);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("reverse-snake:v1")!).stars[0])).toBe(1);
 });

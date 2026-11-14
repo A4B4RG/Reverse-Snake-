@@ -56,7 +56,8 @@ test("the full recorded fruit ghost stays below 45% opacity", async ({
   await page.keyboard.up("ArrowLeft");
   const baseline = await crop();
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "End round" }).dispatchEvent("click");
+  await page.reload();
+  await page.clock.runFor(100);
   await page
     .getByRole("button", { name: "Open game menu" })
     .dispatchEvent("click");

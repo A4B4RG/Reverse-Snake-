@@ -114,6 +114,9 @@ export function GameCanvas({
       }
       const visualChanged =
         !lastState ||
+        game.displayPowerUps !== lastState.displayPowerUps ||
+        Boolean(game.displaySpeedRemaining) !== Boolean(lastState.displaySpeedRemaining) ||
+        Boolean(game.displayStunRemaining) !== Boolean(lastState.displayStunRemaining) ||
         game.snake !== lastState.snake ||
         game.player !== lastState.player ||
         game.board !== lastState.board ||

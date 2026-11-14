@@ -6,7 +6,7 @@ The active application is the browser edition in `web/`. The Python/Kivy files a
 
 ## Browser edition
 
-A complete **React + Next.js + Tailwind CSS** version is now available in [`web/`](web/README.md), with flexible boards filling the outer play area, a larger fullscreen field, trainable local fruit/snake opponents, five fruit skins, four snake designs, ten maps, score-gated Levels unlocks, Survival, Hunter, timed Challenges, replays, translucent animated pause, light/dark themes and keyboard/swipe controls with double-tap dash. Saved named character options live in Menu.
+A complete **React + Next.js + Tailwind CSS** version is now available in [`web/`](web/README.md), with flexible boards filling the outer play area, a larger fullscreen field, trainable local fruit/snake opponents, five fruit skins, four snake designs, ten maps, continuous score-gated Levels with saved stars, Survival, Hunter Levels/Survival with speed/Stun pickups, timed Challenges, replays, translucent animated pause, light/dark themes and keyboard/swipe controls with double-tap dash. Saved named character options live in Menu.
 
 ```powershell
 cd web

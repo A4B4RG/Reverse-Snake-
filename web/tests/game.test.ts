@@ -110,7 +110,7 @@ test("safe movement earns the target; idle time cannot clear a level", () => {
   assert.equal(game.score, 0); assert.equal(game.phase, "running");
   const target = ARENAS[0].scoreTarget;
   game = step({ ...game, score: target - 1, difficulty: "easy", playerClock: 80 }, "left");
-  assert.equal(game.reason, "target"); assert.equal(game.phase, "won"); assert.equal(game.score, target);
+  assert.equal(game.reason, null); assert.equal(game.phase, "running"); assert.equal(game.levelCleared, true); assert.equal(game.score, target);
 });
 
 test("restarting creates a fresh round with selected arena and difficulty", () => {

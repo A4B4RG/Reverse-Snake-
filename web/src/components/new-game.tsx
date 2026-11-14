@@ -5,6 +5,8 @@ import {
   Expand,
   Pause,
   Play,
+  Zap,
+  Snowflake,
 } from "lucide-react";
 import {
   ARENAS,
@@ -46,11 +48,14 @@ import {
 import type { Board } from "@/lib/board";
 import { displayRun } from "@/lib/run-display";
 import { AppearancePicker } from "./appearance-picker";
+import { useFullscreen, fullscreenTransition } from "@/hooks/use-fullscreen";
+import { earnProgress, emptyProgress, readHunterProgress, saveHunterProgress } from "@/lib/level-progress";
+import { LevelScoreBar } from "./level-score-bar";
 import { GameMenu } from "./game-menu";
 export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
   const initial: RunMeta =
     mode === "hunter"
-      ? { mode, arena: 0, difficulty: "normal", seed: 1 }
+      ? { mode, arena: 0, difficulty: "normal", seed: 1, hunterMode: "levels" }
       : {
           mode,
           arena: CHALLENGES[0].arena,
@@ -73,6 +78,9 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
     input = useRef(new GameInput());
   const [meta, setMeta] = useState(initial),
     [notice, setNotice] = useState("");
+  const progressRef = useRef(emptyProgress());
+  const [progress, setProgress] = useState(emptyProgress);
+  const { toggleFullscreen: fullscreen } = useFullscreen(arcadeRef, canvasRef, setNotice);
   const [records, setRecords] = useState<ExtraRecord[]>([]);
   const [help, setHelp] = useState(false);
   const focus = useCallback(
@@ -87,8 +95,18 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
     displayRef.current = displayRun(s);
     setState(s);
   }, []);
+  const awardProgress = useCallback((s: RunState) => {
+    if (!isHunter(s) || s.mode !== "levels") return;
+    const next = earnProgress(progressRef.current, s.arena, s.score, ARENAS[s.arena].scoreTarget, s.levelCleared);
+    if (next !== progressRef.current) {
+      progressRef.current = next;
+      setProgress(next);
+      if (!saveHunterProgress(next)) setNotice("Progress lasts for this visit because browser storage is unavailable.");
+    }
+  }, []);
   const complete = useCallback(
     (s: RunState) => {
+      awardProgress(s);
       const replay = recorder.current?.finish(s);
       recorder.current = null;
       saveLearning(s.learning);
@@ -103,7 +121,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
       input.current.clear();
       publish(s);
     },
-    [publish],
+    [publish, awardProgress],
   );
   const command = useCallback(
     (c: Command) => {
@@ -111,14 +129,17 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
       recorder.current?.add(c);
       const next = applyCommand(stateRef.current, c, metaRef.current);
       publish(next);
+      awardProgress(next);
       if (running && (next.phase === "won" || next.phase === "lost"))
         complete(next);
     },
-    [publish, complete],
+    [publish, complete, awardProgress],
   );
   const loadPreferences = useCallback(() => {
     if (preferencesLoaded.current) return;
     preferencesLoaded.current = true;
+    progressRef.current = readHunterProgress();
+    setProgress(progressRef.current);
     metaRef.current = {
       ...metaRef.current,
       board: stateRef.current.board,
@@ -184,6 +205,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
     [command],
   );
   const configure = (m: RunMeta) => {
+    if (m.mode === "hunter" && m.hunterMode !== "survival" && m.arena > progressRef.current.unlocked) return;
     if (
       stateRef.current.phase === "running" ||
       stateRef.current.phase === "paused"
@@ -226,6 +248,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
           recorder.current?.add(c);
           const next = applyCommand(stateRef.current, c, metaRef.current);
           stateRef.current = next;
+          awardProgress(next);
           displayRef.current = displayRun(next);
           accumulator -= STEP_MS;
           if (next.phase === "won" || next.phase === "lost") complete(next);
@@ -284,13 +307,14 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
       }
     };
     const up = (e: KeyboardEvent) => release(keyboardSource(e));
+    const blur = () => { if (!fullscreenTransition() || document.hidden) pause(); };
     const hidden = () => {
       if (document.hidden) pause();
     };
     frame = requestAnimationFrame(animate);
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
-    window.addEventListener("blur", pause);
+    window.addEventListener("blur", blur);
     document.addEventListener("visibilitychange", hidden);
     return () => {
       saveLearning(stateRef.current.learning);
@@ -298,7 +322,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
       cancelAnimationFrame(frame);
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
-      window.removeEventListener("blur", pause);
+      window.removeEventListener("blur", blur);
       document.removeEventListener("visibilitychange", hidden);
     };
   }, [
@@ -312,6 +336,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
     mode,
     publish,
     loadPreferences,
+    awardProgress,
   ]);
   const resize = useCallback(
     (board: Board) => {
@@ -342,20 +367,17 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
       r.meta.mode === mode &&
       r.meta.arena === meta.arena &&
       r.meta.difficulty === meta.difficulty &&
-      r.meta.challenge === meta.challenge,
+      r.meta.challenge === meta.challenge &&
+      (mode !== "hunter" || r.meta.hunterMode === meta.hunterMode),
   );
   const best = [...matching].sort((a, b) =>
     mode === "hunter"
       ? b.score - a.score
       : b.elapsed - a.elapsed || b.closeCalls - a.closeCalls,
   )[0];
-  const fullscreen = async () => {
-    try {
-      if (document.fullscreenElement) await document.exitFullscreen();
-      else await arcadeRef.current?.requestFullscreen();
-    } catch {
-      setNotice("Fullscreen is unavailable in this browser window.");
-    }
+  const nextMap = () => {
+    if (stateRef.current.phase === "running" || stateRef.current.phase === "paused") command({ action: "finish" });
+    configure({ ...metaRef.current, arena: metaRef.current.arena + 1 });
   };
   return (
     <>
@@ -380,7 +402,8 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
           <AppearancePicker value={state.appearance} disabled={active} onChange={appearance}/>
           <div className="mobile-setup menu-settings">
             {mode === "hunter" ? <>
-              <label>Map<select aria-label="Map" value={meta.arena} disabled={active} onChange={e => configure({ ...meta, arena: Number(e.target.value) })}>{ARENAS.map((a,i) => <option key={a.name} value={i}>{a.name}</option>)}</select></label>
+              <label>Mode<select aria-label="Hunter mode" value={meta.hunterMode ?? "levels"} disabled={active} onChange={e => configure({ ...meta, hunterMode: e.target.value as "levels" | "survival", arena: e.target.value === "levels" ? Math.min(meta.arena, progress.unlocked) : meta.arena })}><option value="levels">Levels</option><option value="survival">Survival</option></select></label>
+              <label>Map<select aria-label="Map" value={meta.arena} disabled={active} onChange={e => configure({ ...meta, arena: Number(e.target.value) })}>{ARENAS.map((a,i) => <option key={a.name} value={i} disabled={meta.hunterMode !== "survival" && i > progress.unlocked}>{a.name}{meta.hunterMode !== "survival" && i > progress.unlocked ? " · Locked" : ""}</option>)}</select></label>
               <label>Pace<select aria-label="Pace" value={meta.difficulty} disabled={active} onChange={e => configure({ ...meta, difficulty: e.target.value as Difficulty })}>{Object.entries(DIFFICULTIES).map(([id,d]) => <option key={id} value={id}>{d.label}</option>)}</select></label>
             </> : <label>Course<select aria-label="Course" value={meta.challenge} disabled={active} onChange={e => { const c = CHALLENGES.find(c => c.id === e.target.value)!; configure({ mode, arena: c.arena, difficulty: c.difficulty, seed: c.seed, challenge: c.id }); }}>{CHALLENGES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>}
           </div>
@@ -451,7 +474,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
                 </button>
               </div>
             </div>
-            <div className="round-progress"><span>{ARENAS[meta.arena].name}</span><strong>{mode === "hunter" ? "Hunter" : "Challenge"}</strong></div>
+            {isHunter(state) && state.mode === "levels" ? <LevelScoreBar arena={state.arena} name={ARENAS[state.arena].name} score={state.score} target={ARENAS[state.arena].scoreTarget} cleared={state.levelCleared} running={state.phase === "running"} onNext={state.arena < ARENAS.length - 1 && progress.unlocked > state.arena ? nextMap : undefined}/> : <div className="round-progress"><span>{ARENAS[meta.arena].name}</span><strong>{mode === "hunter" ? "Survival" : "Challenge"}</strong></div>}
             <div className="board-stage" data-phase={state.phase}>
               <GameCanvas
                 gameRef={displayRef}
@@ -466,6 +489,10 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
                     : undefined
                 }
               />
+              {isHunter(state) && state.phase === "running" && (state.speedRemaining > 0 || state.stunRemaining > 0) && <div className="hunter-power-status" role="status">
+                {state.speedRemaining > 0 && <span><Zap size={15}/> 2× speed · {(state.speedRemaining / 1000).toFixed(1)}s</span>}
+                {state.stunRemaining > 0 && <span><Snowflake size={15}/> Food stunned · {(state.stunRemaining / 1000).toFixed(1)}s</span>}
+              </div>}
               {state.phase !== "running" && (
                 <div
                   className={`board-overlay state-overlay ${state.phase === "paused" ? "pause-overlay" : ""}`}
@@ -479,7 +506,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
                         ? "Paused."
                         : state.phase === "won"
                           ? "Sweet success."
-                          : "Try another turn."}
+                          : state.reason === "retired" ? "Chase ended." : "Try another turn."}
                   </h2>
                   <p>
                     {state.phase === "ready"
@@ -501,6 +528,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
                         : "Try again"}
                     <Play size={18} />
                   </button>
+                  {state.phase === "paused" && mode === "hunter" && <button className="text-button" onClick={() => command({ action: "finish" })}>End chase</button>}
                   {state.phase !== "ready" && (
                     <button
                       className="text-button"
@@ -538,6 +566,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
           <aside className="game-sidebar extra-setup" aria-label="Round setup">
             {mode === "hunter" ? (
               <>
+                <label>Hunter mode<select aria-label="Hunter mode" disabled={active} value={meta.hunterMode ?? "levels"} onChange={e => configure({ ...meta, hunterMode: e.target.value as "levels" | "survival", arena: e.target.value === "levels" ? Math.min(meta.arena, progress.unlocked) : meta.arena })}><option value="levels">Levels</option><option value="survival">Survival</option></select></label>
                 <label>
                   Arena
                   <select
@@ -548,7 +577,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
                     }
                   >
                     {ARENAS.map((a, i) => (
-                      <option key={a.name} value={i}>
+                      <option key={a.name} value={i} disabled={meta.hunterMode !== "survival" && i > progress.unlocked}>
                         {a.name}
                       </option>
                     ))}
@@ -602,7 +631,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
             <div className="extra-description">
               <p>
                 {mode === "hunter"
-                  ? "Arrow keys / WASD turn. The snake keeps moving. Queue up to two corners. You cannot reverse. Each fruit grows your snake and earns 100 points × difficulty. Fill the free board to win."
+                  ? "Arrow keys / WASD turn. The snake keeps moving. Queue up to two corners. You cannot reverse. Each fruit grows your snake and earns 100 points × difficulty. Levels unlocks the next map at its target while the hunt continues; keep scoring for stars. Survival opens all maps. Collect lightning for 2× speed for 10 seconds or a snowflake to freeze food for 5 seconds."
                   : `${DIFFICULTIES[meta.difficulty].label} · ${ARENAS[meta.arena].name}. Hold arrows / WASD to move; Space dashes. Capture loses. Reach the timer to win. Compare time, then close calls on this course.`}
               </p>
               <p>
@@ -654,7 +683,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
         >
           <p className="modal-intro">
             {mode === "hunter"
-              ? "Use arrow keys, WASD or swipes to turn your snake. It keeps moving. Queue up to two corners; reversals are rejected. Eat fruit for one extra cell and 100 points × difficulty. Avoid walls, stones and your body. The departing tail cell is safe unless growing. Fill the available board to win."
+              ? "Use arrow keys, WASD or swipes to turn your snake. It keeps moving. Queue up to two corners; reversals are rejected. Eat fruit for one extra cell and 100 points × difficulty. Avoid walls, stones and your body. The departing tail cell is safe unless growing. Levels unlocks maps at their score targets without ending the hunt; earn stars at +100, +300 and above +700. Survival has all maps. Lightning gives 2× speed for 10 seconds; snowflakes freeze food for 5 seconds. Filling the board wins."
               : `Survive ${challenge?.target ? challenge.target / 1000 : 0} seconds in ${ARENAS[meta.arena].name}. Arrow keys / WASD move your fruit; swipe up, down, left or right to keep moving in that direction. Space or a double-tap after a swipe moves three cells in your last direction. Capture loses. Snake crashes respawn a hunter. Close calls give a five-second speed boost. This local course has the same course and seed on every attempt.`}
           </p>
           <p className="modal-intro">

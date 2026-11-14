@@ -21,6 +21,7 @@ import { DEFAULT_APPEARANCE, type Appearance } from "./appearance";
 export const GRID = 20;
 export const STEP_MS = 20;
 export const PLAYER_INTERVAL = 100;
+export const playerInterval = (difficulty: Difficulty) => difficulty === "hard" ? 120 : PLAYER_INTERVAL;
 export const DASH_COOLDOWN = 4000;
 export const BOOST_INTERVAL = PLAYER_INTERVAL / 2;
 export const CLOSE_CALL_DURATION = { levels: 2000, survival: 5000 } as const;
@@ -31,7 +32,7 @@ export type Direction = "up" | "right" | "down" | "left";
 export type Difficulty = "easy" | "normal" | "hard";
 export type GameMode = "levels" | "survival";
 export type Phase = "ready" | "running" | "paused" | "won" | "lost";
-export type EndReason = "wall" | "body" | "obstacle" | "hunger" | "caught" | "target";
+export type EndReason = "wall" | "body" | "obstacle" | "hunger" | "caught" | "target" | "retired";
 export type Arena = {
   name: string;
   subtitle: string;
@@ -138,21 +139,21 @@ export const DIFFICULTIES: Record<
 > = {
   easy: {
     label: "Easy",
-    interval: 260,
+    interval: 200,
     commitment: 4,
     multiplier: 1,
     description: "A slower snake. More time to find your feet.",
   },
   normal: {
     label: "Normal",
-    interval: 200,
+    interval: 100,
     commitment: 3,
     multiplier: 1.5,
     description: "A fair chase. Stay one turn ahead.",
   },
   hard: {
     label: "Hard",
-    interval: 140,
+    interval: 80,
     commitment: 2,
     multiplier: 2,
     description: "Faster, sharper, hungrier. You know the drill.",
@@ -161,6 +162,10 @@ export const DIFFICULTIES: Record<
 
 export interface GameState {
   displayObstacles?: Point[];
+  displayPowerUps?: { kind: "speed" | "stun"; position: Point }[];
+  displaySpeedRemaining?: number;
+  displayStunRemaining?: number;
+  levelCleared: boolean;
   board: Board;
   appearance: Appearance;
   learning: Learning;
@@ -246,6 +251,7 @@ export function createGame(
     learning,
     appearance,
     lastPlayerMove: -1000,
+    levelCleared: false,
     phase: "ready",
     mode,
     arena: safeArena,
@@ -339,7 +345,7 @@ function movePlayer(state: GameState, direction: Direction): GameState {
     player: next,
     playerDirection: direction,
     lastPlayerMove: state.elapsed,
-    score: state.score + (state.mode === "levels" ? DIFFICULTIES[state.difficulty].multiplier : 0),
+    score: state.score,
   };
   if (!occupied(next, state.snake))
     moved = {
@@ -361,6 +367,7 @@ function movePlayer(state: GameState, direction: Direction): GameState {
     };
   // The whole snake is dangerous, including when the player moves into its body.
   if (occupied(next, state.snake)) return finish(moved, "lost", "caught");
+  if (state.mode === "levels") moved.score += DIFFICULTIES[state.difficulty].multiplier;
   // A close call is a safe exit from the head's adjacent cell. Standing still,
   // brushing the tail, and blocked moves cannot award or refresh a boost.
   if (
@@ -584,7 +591,16 @@ export function dash(state: GameState, direction: Direction | null): GameState {
     next = movePlayer(next, heading);
     if (next.phase !== "running") break;
   }
-  return next;
+  return qualifyLevel(next);
+}
+
+export function qualifyLevel(state: GameState): GameState {
+  return state.phase === "running" && state.mode === "levels" && !state.levelCleared && state.score >= ARENAS[state.arena].scoreTarget
+    ? { ...state, levelCleared: true } : state;
+}
+export function endChase(state: GameState): GameState {
+  if (!["running", "paused"].includes(state.phase)) return state;
+  return { ...state, phase: state.levelCleared ? "won" : "lost", reason: "retired", pendingDirection: null };
 }
 
 /** Advance by one 20ms step. Pause/ready/end states are completely inert. */
@@ -602,7 +618,7 @@ export function step(state: GameState, direction: Direction | null): GameState {
     boostTrail: state.boostRemaining > STEP_MS ? state.boostTrail : [],
   };
   next.score = state.mode === "levels" ? state.score : Math.floor(next.elapsed / 100) * DIFFICULTIES[next.difficulty].multiplier;
-  const interval = state.boostRemaining > 0 ? BOOST_INTERVAL : PLAYER_INTERVAL;
+  const interval = playerInterval(state.difficulty) / (state.boostRemaining > 0 ? 2 : 1);
   if (next.playerClock >= interval) {
     const heading = next.pendingDirection ?? direction;
     // Consume unused time too: an idle player cannot bank a burst of moves.
@@ -618,11 +634,11 @@ export function step(state: GameState, direction: Direction | null): GameState {
   }
   const arena = ARENAS[next.arena];
   if (next.mode === "survival") return next;
-  if (next.score >= arena.scoreTarget) return finish({ ...next, score: arena.scoreTarget }, "won", "target");
+  next = qualifyLevel(next);
   const targetLength = Math.max(
     3,
     arena.length -
-      Math.floor(next.score / (arena.scoreTarget / (arena.length - 3))),
+      Math.floor(Math.min(next.score, arena.scoreTarget) / (arena.scoreTarget / (arena.length - 3))),
   );
   if (next.snake.length > targetLength)
     next.snake = next.snake.slice(0, targetLength);

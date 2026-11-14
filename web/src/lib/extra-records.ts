@@ -25,7 +25,7 @@ export function readExtraRecords(): ExtraRecord[] {
           .filter(
             (r) =>
               r &&
-              ((r.version === GAME_VERSION && r.ruleset === RULESET)||(r.version === "1.1.0" && r.ruleset === "canopy-2")) &&
+              ((r.version === GAME_VERSION && r.ruleset === RULESET)||(r.version === "1.3.0" && r.ruleset === "orchard-4")||(r.version === "1.2.0" && r.ruleset === "orchard-3")||(r.version === "1.1.0" && r.ruleset === "canopy-2")) &&
               ["hunter", "challenge"].includes(r.meta?.mode) &&
               isRunMeta(r.meta) &&
               Number.isFinite(r.elapsed) &&
@@ -45,7 +45,7 @@ export function readExtraRecords(): ExtraRecord[] {
 export function recordExtra(s: RunState, meta: RunMeta): boolean {
   if (s.phase !== "won" && s.phase !== "lost") return false;
   const record: ExtraRecord = {
-    meta: {mode:meta.mode,arena:meta.arena,difficulty:meta.difficulty,seed:meta.seed,challenge:meta.challenge,board:meta.board,appearance:meta.appearance},
+    meta: {mode:meta.mode,arena:meta.arena,difficulty:meta.difficulty,seed:meta.seed,challenge:meta.challenge,hunterMode:meta.hunterMode,board:meta.board,appearance:meta.appearance},
     elapsed: s.elapsed,
     score: s.score,
     closeCalls: "closeCalls" in s ? s.closeCalls : 0,

@@ -1,10 +1,12 @@
 import {
+  ARENAS,
   DIFFICULTIES,
   STEP_MS,
   VECTORS,
   equal,
   inside,
   obstaclesFor,
+  type GameMode,
   type Difficulty,
   type Direction,
   type Phase,
@@ -28,7 +30,20 @@ import {
 } from "./learning";
 import { DEFAULT_APPEARANCE, type Appearance } from "./appearance";
 
+export const HUNTER_SPEED_DURATION = 10_000;
+export const STUN_DURATION = 5_000;
+export type PowerUp = { kind: "speed" | "stun"; position: Point };
+export const hunterInterval = (s: HunterState) => DIFFICULTIES[s.difficulty].interval / (s.speedRemaining > 0 ? 2 : 1);
+export const fruitInterval = (difficulty: Difficulty) => DIFFICULTIES[difficulty].interval / { easy: 0.5, normal: 0.75, hard: 1 }[difficulty];
 export type HunterState = {
+  mode: GameMode;
+  levelCleared: boolean;
+  powerUps: PowerUp[];
+  powerUpClock: number;
+  nextPowerUp: PowerUp["kind"];
+  speedRemaining: number;
+  stunRemaining: number;
+  fruitTrail: Point[];
   board: Board;
   learning: Learning;
   appearance: Appearance;
@@ -56,9 +71,10 @@ export function spawnFood(
   snake: Point[],
   seed: number,
   board: Board = DEFAULT_BOARD,
+  extraBlocked: Point[] = [],
 ) {
   const blocked = new Set(
-    [...snake, ...obstaclesFor(arena, board)].map(
+    [...snake, ...extraBlocked, ...obstaclesFor(arena, board)].map(
       (p) => p.y * board.columns + p.x,
     ),
   );
@@ -82,6 +98,7 @@ export function createHunter(
   board: Board = DEFAULT_BOARD,
   learning: Learning = createLearning(),
   appearance: Appearance = DEFAULT_APPEARANCE,
+  mode: GameMode = "levels",
 ): HunterState {
   const snake = fitSnake(
     { x: Math.floor(board.columns * 0.25), y: Math.floor(board.rows * 0.15) },
@@ -90,7 +107,15 @@ export function createHunter(
     board,
     obstaclesFor(arena, board),
   );
-  return {
+  let s: HunterState = {
+    mode,
+    levelCleared: false,
+    powerUps: [],
+    powerUpClock: 0,
+    nextPowerUp: "speed",
+    speedRemaining: 0,
+    stunRemaining: 0,
+    fruitTrail: [],
     board,
     learning,
     appearance,
@@ -109,6 +134,15 @@ export function createHunter(
     collected: 0,
     reason: null,
   };
+  s = spawnPowerUp(s);
+  return spawnPowerUp(s);
+}
+export function spawnPowerUp(s: HunterState): HunterState {
+  const spawned = spawnFood(s.arena, s.snake, s.seed, s.board, [...s.powerUps.map(p => p.position), ...(s.food ? [s.food] : [])]);
+  return spawned.food ? { ...s, seed: spawned.seed, powerUps: [...s.powerUps, { kind: s.nextPowerUp, position: spawned.food }], nextPowerUp: s.nextPowerUp === "speed" ? "stun" : "speed", powerUpClock: 0 } : s;
+}
+export function endHunt(s: HunterState): HunterState {
+  return ["running", "paused"].includes(s.phase) ? { ...s, phase: s.levelCleared ? "won" : "lost", turns: [], reason: "retired" } : s;
 }
 export function turnHunter(s: HunterState, direction: Direction): HunterState {
   if (s.phase !== "running" || s.turns.length >= 2) return s;
@@ -120,13 +154,17 @@ export function turnHunter(s: HunterState, direction: Direction): HunterState {
 }
 export function hunterStep(s: HunterState): HunterState {
   if (s.phase !== "running") return s;
-  const next = {
+  let next = {
     ...s,
+    speedRemaining: Math.max(0, s.speedRemaining - STEP_MS),
+    stunRemaining: Math.max(0, s.stunRemaining - STEP_MS),
+    powerUpClock: s.powerUpClock + STEP_MS,
     clock: s.clock + STEP_MS,
-    fruitClock: s.fruitClock + STEP_MS,
+    fruitClock: s.stunRemaining > 0 ? 0 : s.fruitClock + STEP_MS,
     elapsed: s.elapsed + STEP_MS,
   };
-  const interval = DIFFICULTIES[s.difficulty].interval;
+  if (next.powerUps.length < 2 && next.powerUpClock >= 8000) next = spawnPowerUp(next);
+  const interval = hunterInterval(s);
   if (next.clock < interval) return evadeFruit(next);
   next.clock -= interval;
   next.direction = s.turns[0] ?? s.direction;
@@ -166,12 +204,25 @@ export function hunterStep(s: HunterState): HunterState {
   if (growing) {
     next.collected++;
     next.score += 100 * DIFFICULTIES[s.difficulty].multiplier;
-    Object.assign(next, spawnFood(s.arena, next.snake, s.seed, s.board));
+    let spawned = spawnFood(s.arena, next.snake, next.seed, s.board, next.powerUps.map(p => p.position));
+    if (!spawned.food) spawned = spawnFood(s.arena, next.snake, next.seed, s.board);
+    Object.assign(next, spawned);
+    next.powerUps = next.powerUps.filter(p => !next.food || !equal(p.position, next.food));
+    next.fruitClock = 0;
+    next.fruitTrail = [];
     if (!next.food) {
       next.phase = "won";
       next.reason = "full board";
     }
   }
+  const pickup = next.powerUps.find(p => equal(p.position, head));
+  if (pickup) {
+    next.powerUps = next.powerUps.filter(p => p !== pickup);
+    next.powerUpClock = 0;
+    if (pickup.kind === "speed") next.speedRemaining = HUNTER_SPEED_DURATION;
+    else { next.stunRemaining = STUN_DURATION; next.fruitClock = 0; }
+  }
+  if (next.mode === "levels" && next.score >= ARENAS[next.arena].scoreTarget) next.levelCleared = true;
   return evadeFruit(next);
 }
 
@@ -179,7 +230,8 @@ export function evadeFruit(s: HunterState): HunterState {
   if (
     s.phase !== "running" ||
     !s.food ||
-    s.fruitClock < { easy: 520, normal: 340, hard: 220 }[s.difficulty]
+    s.stunRemaining > 0 ||
+    s.fruitClock + 0.000001 < fruitInterval(s.difficulty)
   )
     return s;
   const blocked = [...obstaclesFor(s.arena, s.board), ...s.snake];
@@ -208,8 +260,18 @@ export function evadeFruit(s: HunterState): HunterState {
         : s.snake[0];
   const influence =
     s.learning.fruit.samples >= 8
-      ? { easy: 0.6, normal: 1.8, hard: 3 }[s.difficulty]
+      ? { easy: 3, normal: 4, hard: 5 }[s.difficulty]
       : 0;
+  const distances = new Map<string, number>();
+  const occupied = new Set(blocked.map(p => `${p.x},${p.y}`));
+  const queue = [s.snake[0]];
+  distances.set(`${queue[0].x},${queue[0].y}`, 0);
+  for (let i = 0; i < queue.length; i++) for (const d of MOVES) {
+    const v = VECTORS[d], p = { x: queue[i].x + v.x, y: queue[i].y + v.y }, key = `${p.x},${p.y}`;
+    if (!inside(p, s.board) || occupied.has(key) || distances.has(key)) continue;
+    distances.set(key, distances.get(`${queue[i].x},${queue[i].y}`)! + 1);
+    queue.push(p);
+  }
   const options = MOVES.map((d, i) => {
     const v = VECTORS[d],
       p = { x: s.food!.x + v.x, y: s.food!.y + v.y };
@@ -222,11 +284,9 @@ export function evadeFruit(s: HunterState): HunterState {
       d,
       p,
       score: legal[i]
-        ? Math.min(
-            9,
-            Math.abs(p.x - predicted.x) + Math.abs(p.y - predicted.y),
-          ) *
-            0.6 +
+        ? (distances.get(`${p.x},${p.y}`) ?? (s.board.columns + s.board.rows)) * 0.8 +
+          (Math.abs(p.x - predicted.x) + Math.abs(p.y - predicted.y)) * 0.2 -
+          s.fruitTrail.filter(q => equal(p, q)).length * 1.5 +
           exits * 0.5 +
           learned[i] * influence +
           (d === s.fruitDirection ? 0.15 : 0)
@@ -237,8 +297,9 @@ export function evadeFruit(s: HunterState): HunterState {
   return {
     ...s,
     food: options[0].p,
+    fruitTrail: [...s.fruitTrail, s.food].slice(-8),
     fruitDirection: options[0].d,
-    fruitClock: 0,
+    fruitClock: Math.max(0, s.fruitClock - fruitInterval(s.difficulty)),
   };
 }
 export function resizeHunter(s: HunterState, board: Board): HunterState {
@@ -258,5 +319,11 @@ export function resizeHunter(s: HunterState, board: Board): HunterState {
         ...snake,
       ])
     : null;
-  return { ...s, board, snake, food, turns: [] };
+  const blocked = [...obstacles, ...snake, ...(food ? [food] : [])];
+  const powerUps = s.powerUps.map(power => {
+    const position = nearestFree(project(power.position, s.board, board), board, blocked);
+    blocked.push(position);
+    return { ...power, position };
+  });
+  return { ...s, board, snake, food, powerUps, fruitTrail: [] };
 }

@@ -51,6 +51,21 @@ export function renderGame(ctx: CanvasRenderingContext2D, game: GameState, reduc
     ctx.beginPath(); ctx.roundRect(x - CELL*.3, y - CELL*.3, CELL*.55, CELL*.15, 2); ctx.fill();
     leaf(ctx, x + 3, y + 4, 8, -0.45, palette.moss);
   });
+  for (const power of game.displayPowerUps ?? []) {
+    const p = center(power.position), radius = CELL * 0.4;
+    ctx.fillStyle = power.kind === "speed" ? "#f7b43d" : "#79d8ef";
+    ctx.strokeStyle = power.kind === "speed" ? "#79510d" : "#215d73";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(p.x, p.y, radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.save(); ctx.translate(p.x, p.y); ctx.scale(CELL / 24, CELL / 24);
+    ctx.strokeStyle = "#173e36"; ctx.fillStyle = "#173e36"; ctx.lineWidth = 2;
+    if (power.kind === "speed") {
+      ctx.beginPath(); ctx.moveTo(2, -8); ctx.lineTo(-5, 1); ctx.lineTo(0, 1); ctx.lineTo(-2, 8); ctx.lineTo(6, -2); ctx.lineTo(1, -2); ctx.closePath(); ctx.fill();
+    } else {
+      for (let i = 0; i < 3; i++) { ctx.rotate(Math.PI / 3); ctx.beginPath(); ctx.moveTo(-7, 0); ctx.lineTo(7, 0); ctx.stroke(); }
+    }
+    ctx.restore();
+  }
   if (!reduceMotion && game.boostRemaining > 0) {
     game.boostTrail.forEach((point, i) => {
       const p = center(point); ctx.globalAlpha = (i + 1) / (game.boostTrail.length + 2) * 0.55;
@@ -92,7 +107,12 @@ export function renderGame(ctx: CanvasRenderingContext2D, game: GameState, reduc
     const p = center(game.player); ctx.strokeStyle = palette.rush; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(p.x, p.y, 18, 0, Math.PI * 2); ctx.stroke();
   }
-  const fruit=center(game.player);drawFruit(ctx,appearance.fruit,fruit.x,fruit.y,CELL*.94,theme);
+  const fruit=center(game.player);
+  if (game.displayStunRemaining) {
+    ctx.strokeStyle = "#287da0"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(fruit.x, fruit.y, CELL * 0.53, 0, Math.PI * 2); ctx.stroke();
+  }
+  drawFruit(ctx,appearance.fruit,fruit.x,fruit.y,CELL*.94,theme);
   if (!reduceMotion && game.closeCallFlash > 0 && game.closeCallAt) {
     const p = center(game.closeCallAt); const progress = 1 - game.closeCallFlash / CLOSE_CALL_FLASH;
     ctx.globalAlpha = 1 - progress;
