@@ -11,7 +11,7 @@ test("repeated controls, modal focus, navigation and offline play retain one gam
     if (r.status() >= 400 && /\.(js|css|woff2|svg)(\?|$)/.test(r.url()))
       badAssets.push(r.url());
   });
-  await page.goto("/");
+  await page.goto("/food");
   await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   for (let i = 0; i < 3; i++) {
     if (i === 0) await page.getByRole("button", { name: "Let’s play" }).click();
@@ -68,7 +68,7 @@ test("repeated controls, modal focus, navigation and offline play retain one gam
   await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   await page.getByRole("button", { name: "Start round" }).click();
   await page.keyboard.press("Escape");
-  await page.getByRole("link", { name: "Fruit", exact: true }).click();
+  await page.getByRole("link", { name: "Food", exact: true }).click();
   await expect(page.locator("canvas")).toHaveCount(1);
   await expect(page.locator(".board-stage")).toHaveAttribute(
     "data-phase",
@@ -89,7 +89,7 @@ test("switching to another browser tab pauses the live chase", async ({
   page,
   context,
 }) => {
-  await page.goto("/");
+  await page.goto("/food");
   await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   await page.getByRole("button", { name: "Let’s play" }).click();
   const other = await context.newPage();
@@ -114,7 +114,7 @@ test("switching to another browser tab pauses the live chase", async ({
 test("the browser blur event pauses and remains paused until resume", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/food");
   await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   await page.getByRole("button", { name: "Let’s play" }).click();
   await page.evaluate(() => window.dispatchEvent(new Event("blur")));

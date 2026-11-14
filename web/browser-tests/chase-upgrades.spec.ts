@@ -16,7 +16,7 @@ for (const mode of ["food", "hunter"] as const) for (const touch of [false, true
   test(`${mode}: mid-chase fullscreen preserves ${touch ? "swipes" : "keyboard steering"} on entry and exit`, async ({ page }) => {
     if (touch) await page.setViewportSize({ width: 390, height: 844 });
     await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
-    await page.goto(mode === "food" ? "/" : "/hunter");
+    await page.goto(mode === "food" ? "/food" : "/hunter");
     await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
     await page.clock.pauseAt(new Date("2026-11-14T00:00:01Z"));
     await page.getByRole("button", { name: mode === "food" ? "Let’s play" : "Start round" }).dispatchEvent("click");

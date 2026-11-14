@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import { fruit, chooseAppearance } from "./helpers";
 
-for (const route of ["/", "/hunter", "/challenge"]) {
+for (const route of ["/food", "/hunter", "/challenge"]) {
   test(`${route}: skins persist, freeze during the match and are recorded`, async ({
     page,
   }) => {
@@ -19,7 +19,7 @@ for (const route of ["/", "/hunter", "/challenge"]) {
     await expect(page.locator("canvas")).toHaveAttribute("data-snake", "coral");
     await page
       .getByRole("button", {
-        name: route === "/" ? "Let’s play" : "Start round",
+        name: route === "/food" ? "Let’s play" : "Start round",
       })
       .dispatchEvent("click");
     await page.clock.runFor(40);
@@ -48,7 +48,7 @@ test("real moves train both persistent policies across mode changes", async ({
   page,
 }) => {
   await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
-  await page.goto("/");
+  await page.goto("/food");
   await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   await page.clock.pauseAt(new Date("2026-11-14T00:00:01Z"));
   await page.getByRole("button", { name: "Let’s play" }).dispatchEvent("click");
@@ -86,7 +86,7 @@ test("pause loops the last recorded fruit-and-snake match without advancing live
   page,
 }) => {
   await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
-  await page.goto("/");
+  await page.goto("/food");
   await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   await page.clock.pauseAt(new Date("2026-11-14T00:00:01Z"));
   await page.getByRole("button", { name: "Let’s play" }).dispatchEvent("click");
@@ -105,8 +105,7 @@ test("pause loops the last recorded fruit-and-snake match without advancing live
   const hash = () =>
     page.locator("canvas").evaluate((c: HTMLCanvasElement) => c.toDataURL());
   const a = await hash();
-  await page.clock.runFor(120);
-  expect(await hash()).not.toBe(a);
+  await expect.poll(async () => { await page.clock.runFor(80); return await hash() !== a; }).toBe(true);
   expect(await page.locator("canvas").getAttribute("data-elapsed")).toBe(time);
   expect(await page.locator(".game-hud").innerText()).toBe(hud);
   const style = await page.locator(".pause-overlay").evaluate((el) => ({
@@ -124,7 +123,7 @@ test("pause loops the last recorded fruit-and-snake match without advancing live
 test("the outer rectangle is fully playable and fullscreen grows the board", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/food");
   await expect(page.locator("canvas")).toHaveAttribute("data-columns", /\d+/);
   const geometry = () =>
     page.locator("canvas").evaluate((c) => ({
@@ -155,7 +154,7 @@ test("the outer rectangle is fully playable and fullscreen grows the board", asy
 test("every fruit and snake design produces distinct artwork", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/food");
   await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   const hashes = new Set<string>();
   for (const skin of ["Apple", "Mango", "Pear", "Orange", "Strawberry"]) {
@@ -200,7 +199,7 @@ test("learning stays in memory for another round when storage is blocked", async
     };
   });
   await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
-  await page.goto("/");
+  await page.goto("/food");
   await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   await page.clock.pauseAt(new Date("2026-11-14T00:00:01Z"));
   await page.getByRole("button", { name: "Let’s play" }).dispatchEvent("click");

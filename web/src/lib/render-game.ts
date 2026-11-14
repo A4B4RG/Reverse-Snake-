@@ -1,4 +1,4 @@
-import { obstaclesFor, CLOSE_CALL_FLASH, type GameState, type Point } from "./game";
+import { obstaclesFor, CLOSE_CALL_FLASH, type GameState, type Point, type Direction } from "./game";
 import { DEFAULT_APPEARANCE, type FruitSkin } from "./appearance";
 import { drawFruit } from "./fruit-art";
 import type { Theme } from "./theme";
@@ -26,7 +26,7 @@ function ghostFruit(ctx:CanvasRenderingContext2D,skin:FruitSkin,x:number,y:numbe
 }
 
 /** Effects represent the rules state; they never alter hitboxes or clocks. */
-export function renderGame(ctx: CanvasRenderingContext2D, game: GameState, reduceMotion = false, ghost?: Point | null, theme: Theme = "light", viewport={width:CANVAS_SIZE,height:CANVAS_SIZE}, ghostSkin?:FruitSkin) {
+export function renderGame(ctx: CanvasRenderingContext2D, game: GameState, reduceMotion = false, ghost?: Point | null, theme: Theme = "light", viewport={width:CANVAS_SIZE,height:CANVAS_SIZE}, ghostSkin?:FruitSkin, animationTime=game.elapsed, biteRemaining=game.bite?.remaining ?? 0) {
   ctx.save();
   const palette = PALETTES[theme];
   const {width,height}=viewport, board=game.board??{columns:20,rows:20}, appearance=game.appearance??{fruit:"mango",snake:"amber"};
@@ -45,11 +45,20 @@ export function renderGame(ctx: CanvasRenderingContext2D, game: GameState, reduc
   ctx.strokeRect(PAD, PAD, width - PAD * 2, height - PAD * 2);
   (game.displayObstacles ?? obstaclesFor(game.arena,board)).forEach(point => {
     const { x, y } = center(point);
+    const wallTime = game.displayWallAnimation ?? 0;
+    const rise = reduceMotion || wallTime === 0 ? 1 : wallTime > 600 ? (wallTime - 600) / 600 : 1 - wallTime / 600;
+    ctx.save();
+    if (wallTime && !reduceMotion) {
+      ctx.strokeStyle = "#39a8af"; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.ellipse(x,y + CELL*.25,CELL*.5,CELL*.16,0,0,Math.PI*2);ctx.stroke();
+    }
+    ctx.translate(x,y + (1-rise)*CELL*.3);ctx.scale(1, Math.max(.01,rise));ctx.translate(-x,-y);ctx.globalAlpha=Math.max(.05,rise);
     ctx.fillStyle = palette.stone;
     ctx.beginPath(); ctx.roundRect(x - CELL*.4, y - CELL*.4, CELL*.8, CELL*.8, 4); ctx.fill();
     ctx.fillStyle = palette.stoneTop;
     ctx.beginPath(); ctx.roundRect(x - CELL*.3, y - CELL*.3, CELL*.55, CELL*.15, 2); ctx.fill();
     leaf(ctx, x + 3, y + 4, 8, -0.45, palette.moss);
+    ctx.restore();
   });
   for (const power of game.displayPowerUps ?? []) {
     const p = center(power.position), radius = CELL * 0.4;
@@ -79,7 +88,17 @@ export function renderGame(ctx: CanvasRenderingContext2D, game: GameState, reduc
   if(ghost) {const p=center(ghost);ghostFruit(ctx,ghostSkin??appearance.fruit,p.x,p.y,CELL*.94,theme);}
   const designs={amber:{edge:"#6c4324",fill:"#dc9845",head:"#f0b35b",mark:"#805031"},jade:{edge:"#164d45",fill:"#3caa8b",head:"#64c9a4",mark:"#216b57"},coral:{edge:"#793c50",fill:"#e66e78",head:"#ff9aa2",mark:"#85384b"},midnight:{edge:"#2d376d",fill:"#758ad4",head:"#a5b7f1",mark:"#d7d9ff"}};
   const design=designs[appearance.snake??DEFAULT_APPEARANCE.snake];
-  const body = [...game.snake].reverse();
+  const halo = (point: Point) => {
+    const p = center(point), time = reduceMotion ? 0 : animationTime / 700;
+    ctx.save();ctx.strokeStyle="#edb23d";ctx.fillStyle="#ffe091";ctx.lineWidth=2;
+    ctx.beginPath();ctx.ellipse(p.x,p.y-CELL*.4,CELL*.54,CELL*.18,-.15,0,Math.PI*2);ctx.stroke();
+    for(let i=0;i<5;i++) {
+      const angle=time+i*Math.PI*2/5, x=p.x+Math.cos(angle)*CELL*.7,y=p.y+Math.sin(angle)*CELL*.48;
+      ctx.beginPath();for(let j=0;j<10;j++){const a=j*Math.PI/5-Math.PI/2,r=CELL*(j%2?.06:.14);const sx=x+Math.cos(a)*r,sy=y+Math.sin(a)*r;if(j)ctx.lineTo(sx,sy);else ctx.moveTo(sx,sy);}ctx.closePath();ctx.fill();ctx.stroke();
+    }ctx.restore();
+  };
+  const drawSnake = (segments: Point[], direction: Direction, stun: number) => {
+  const body = [...segments].reverse();
   ctx.lineCap = "round"; ctx.lineJoin = "round";
   const bodyPath = () => {
     ctx.beginPath();
@@ -94,25 +113,45 @@ export function renderGame(ctx: CanvasRenderingContext2D, game: GameState, reduc
     else if(appearance.snake==="midnight"){ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-CELL*.22,-CELL*.1);ctx.lineTo(0,CELL*.12);ctx.lineTo(CELL*.22,-CELL*.1);ctx.stroke();}
     else{ctx.rotate(Math.PI/4);ctx.fillRect(-CELL*.14,-CELL*.14,CELL*.28,CELL*.28);}ctx.restore();
   });
-  const head = center(game.snake[0]); ctx.save(); ctx.translate(head.x, head.y);
+  const head = center(segments[0]); ctx.save(); ctx.translate(head.x, head.y);
   ctx.scale(CELL/27.6,CELL/27.6);
-  ctx.rotate({ right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 }[game.snakeDirection]);
+  ctx.rotate({ right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 }[direction]);
   ctx.fillStyle = design.head; ctx.beginPath(); ctx.ellipse(1, 0, 14, 11, 0, 0, Math.PI * 2); ctx.fill();
   if (theme === "light") { ctx.strokeStyle = "#6c4324"; ctx.lineWidth = 1.5; ctx.stroke(); }
   [-5.5, 5.5].forEach(y => {
     ctx.fillStyle = "#fff1cb"; ctx.beginPath(); ctx.ellipse(5, y, 3.3, 2.6, 0, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "#173b3c"; ctx.fillRect(5, y - 1.7, 1.5, 3.4);
   }); ctx.restore();
+    if (stun > 0) halo(segments[0]);
+    if (game.displaySpeedRemaining) {
+      const inverted = "#" + (0xffffff ^ parseInt(design.fill.slice(1),16)).toString(16).padStart(6,"0");
+      ctx.save();ctx.strokeStyle=inverted;ctx.lineWidth=2;ctx.shadowColor=inverted;ctx.shadowBlur=5;
+      for(let i=0;i<segments.length;i++) {
+        const p=center(segments[i]), phase=reduceMotion?0:animationTime/65+i;
+        ctx.beginPath();ctx.moveTo(p.x-CELL*.28,p.y);ctx.lineTo(p.x-CELL*.08,p.y+Math.sin(phase)*CELL*.25);ctx.lineTo(p.x+CELL*.07,p.y-Math.cos(phase)*CELL*.23);ctx.lineTo(p.x+CELL*.3,p.y);ctx.stroke();
+      }ctx.restore();
+    }
+  };
+  drawSnake(game.snake,game.snakeDirection,game.snakeStun ?? 0);
+  if(game.rival) drawSnake(game.rival.body,game.rival.direction,game.rival.stun);
+  const head=center(game.snake[0]);
   if (game.boostRemaining > 0) {
     const p = center(game.player); ctx.strokeStyle = palette.rush; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(p.x, p.y, 18, 0, Math.PI * 2); ctx.stroke();
   }
   const fruit=center(game.player);
-  if (game.displayStunRemaining) {
-    ctx.strokeStyle = "#287da0"; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(fruit.x, fruit.y, CELL * 0.53, 0, Math.PI * 2); ctx.stroke();
+  if (game.displayStunRemaining) halo(game.player);
+  const beingEaten = game.phase === "lost" && game.bite;
+  drawFruit(ctx,appearance.fruit,fruit.x,fruit.y,CELL*.94*(beingEaten ? Math.max(.2,biteRemaining/600) : 1),theme);
+  if (game.bite && biteRemaining > 0) {
+    const p=center(game.bite.point), progress=1-biteRemaining/600;
+    ctx.save();ctx.translate(p.x,p.y);ctx.rotate({right:0,down:Math.PI/2,left:Math.PI,up:-Math.PI/2}[game.bite.direction]);
+    const open=reduceMotion?.15:Math.sin(progress*Math.PI)*.8;
+    ctx.fillStyle=design.head;ctx.beginPath();ctx.arc(-CELL*.2,0,CELL*.52,open,Math.PI*2-open);ctx.lineTo(CELL*.05,0);ctx.closePath();ctx.fill();
+    ctx.fillStyle="#fff1cb";ctx.beginPath();ctx.moveTo(CELL*.13,-CELL*.1);ctx.lineTo(CELL*.3,-CELL*.2);ctx.lineTo(CELL*.2,0);ctx.fill();
+    ctx.restore();
+    if(!reduceMotion){ctx.fillStyle="#ffc55e";for(let i=0;i<6;i++){const a=i*Math.PI/3,r=progress*CELL*.9;ctx.beginPath();ctx.arc(p.x+Math.cos(a)*r,p.y+Math.sin(a)*r,CELL*.06*(1-progress),0,Math.PI*2);ctx.fill();}}
   }
-  drawFruit(ctx,appearance.fruit,fruit.x,fruit.y,CELL*.94,theme);
   if (!reduceMotion && game.closeCallFlash > 0 && game.closeCallAt) {
     const p = center(game.closeCallAt); const progress = 1 - game.closeCallFlash / CLOSE_CALL_FLASH;
     ctx.globalAlpha = 1 - progress;

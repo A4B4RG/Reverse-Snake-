@@ -9,7 +9,7 @@ const viewports = [
 for (const [width, height] of viewports) {
   test(`the game fits a single viewport at ${width}x${height}`, async ({ page }) => {
     await page.setViewportSize({ width, height });
-    await page.goto("/");
+    await page.goto("/food");
     await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "ready");
     const size = await page.evaluate(() => ({
       width: document.documentElement.scrollWidth,

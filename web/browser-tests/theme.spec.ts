@@ -20,7 +20,7 @@ test("light is the fresh default, dark persists across reload and every route", 
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
-  await page.goto("/");
+  await page.goto("/food");
   await expect(page.locator("canvas")).toHaveAttribute("data-theme", "light");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await openMenu(page);
@@ -28,7 +28,7 @@ test("light is the fresh default, dark persists across reload and every route", 
   await menu(page).getByRole("button", { name: "Dark", exact: true }).click();
   await expect(page.locator("canvas")).toHaveAttribute("data-theme", "dark");
   expect(await page.evaluate(key => localStorage.getItem(key), key)).toBe("dark");
-  for (const route of ["/", "/hunter", "/challenge", "/replays"]) {
+  for (const route of ["/food", "/hunter", "/challenge", "/replays"]) {
     await page.goto(route);
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await expect(page.locator("canvas")).toHaveAttribute("data-theme", "dark");
@@ -47,7 +47,7 @@ test("light is the fresh default, dark persists across reload and every route", 
 
 test("a palette switch redraws a paused board without advancing or resetting it", async ({ page }) => {
   await page.clock.install({ time: new Date("2026-11-14T12:00:00Z") });
-  await page.goto("/");
+  await page.goto("/food");
   await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   await page.clock.pauseAt(new Date("2026-11-14T12:00:01Z"));
   await page.getByRole("button", { name: "Let’s play" }).dispatchEvent("click");
@@ -76,7 +76,7 @@ test("a palette switch redraws a paused board without advancing or resetting it"
 });
 
 test("hover leaves gameplay running; click and keyboard open, Escape and outside click close", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/food");
   const trigger = page.getByRole("button", { name: "Open game menu" });
   await trigger.hover();
   await expect(menu(page)).toHaveCount(0);
@@ -115,7 +115,7 @@ test("hover leaves gameplay running; click and keyboard open, Escape and outside
 });
 
 test("the menu offers Hunter from Fruit and Fruit from Hunter, including during a round", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/food");
   await openMenu(page);
   await expect(menu(page).getByRole("link", { name: "Fruit · escape the hunter" })).toHaveCount(0);
   await expect(menu(page).getByRole("link", { name: "Hunter · control the snake" })).toBeVisible();
@@ -144,7 +144,7 @@ for (const unavailable of [false, true]) {
         Storage.prototype.setItem = function (name, value) { if (name === key) throw new Error("blocked"); return set.call(this, name, value); };
       } else localStorage.setItem(key, "unsupported");
     }, { key, unavailable });
-    await page.goto("/");
+    await page.goto("/food");
     await expect(page.locator("canvas")).toHaveAttribute("data-theme", "light");
     await openMenu(page);
     await menu(page).getByRole("button", { name: "Dark", exact: true }).click();
@@ -154,7 +154,7 @@ for (const unavailable of [false, true]) {
 }
 
 test("theme changes synchronize between open tabs", async ({ page, context }) => {
-  await page.goto("/");
+  await page.goto("/food");
   const second = await context.newPage();
   await second.goto("/hunter");
   await openMenu(second);
@@ -169,7 +169,7 @@ test("both palettes keep every route and the open menu inside desktop, phone and
   for (const theme of ["light", "dark"] as const) {
     for (const [width, height] of [[1440, 900], [320, 568], [844, 390]]) {
       await page.setViewportSize({ width, height });
-      for (const route of ["/", "/hunter", "/challenge", "/replays"]) {
+      for (const route of ["/food", "/hunter", "/challenge", "/replays"]) {
         await page.goto(route);
         await openMenu(page);
         await menu(page).getByRole("button", { name: theme === "light" ? "Light" : "Dark", exact: true }).click();
@@ -180,17 +180,17 @@ test("both palettes keep every route and the open menu inside desktop, phone and
         expect(panel.y + panel.height).toBeLessThanOrEqual(height);
         const toggle = (await menu(page).getByRole("button", { name: "Light", exact: true }).boundingBox())!;
         expect(toggle.height).toBeGreaterThanOrEqual(44);
-        if (route === "/" && height !== 390) await page.screenshot({ path: `docs/screenshots/theme-${theme}-menu-${width === 1440 ? "desktop" : "phone"}.png`, animations: "disabled" });
+        if (route === "/food" && height !== 390) await page.screenshot({ path: `docs/screenshots/theme-${theme}-menu-${width === 1440 ? "desktop" : "phone"}.png`, animations: "disabled" });
         await page.keyboard.press("Escape");
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight)).toBe(true);
-        if (route === "/" && height !== 390) await page.screenshot({ path: `docs/screenshots/theme-${theme}-${width === 1440 ? "desktop" : "phone"}.png`, animations: "disabled" });
+        if (route === "/food" && height !== 390) await page.screenshot({ path: `docs/screenshots/theme-${theme}-${width === 1440 ? "desktop" : "phone"}.png`, animations: "disabled" });
       }
     }
   }
 });
 
 test("supporting text and theme selections have readable contrast in both palettes", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/food");
   for (const theme of ["light", "dark"] as const) {
     await openMenu(page);
     await menu(page).getByRole("button", { name: theme === "light" ? "Light" : "Dark", exact: true }).click();
@@ -220,7 +220,7 @@ test("supporting text and theme selections have readable contrast in both palett
 test.describe("touch menu", () => {
   test.use({ hasTouch: true, isMobile: true, viewport: { width: 320, height: 568 } });
   test("tap toggles the menu and its theme without requiring hover", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/food");
     const trigger = page.getByRole("button", { name: "Open game menu" });
     await trigger.tap();
     await expect(menu(page)).toBeVisible();

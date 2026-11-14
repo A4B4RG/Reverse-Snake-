@@ -113,5 +113,34 @@ export function scaleObstacles(points: Point[], b: Board): Point[] {
         if (inBoard(cell, b)) result.set(key(cell), cell);
       }
   }
-  return [...result.values()];
+  return connectFloor([...result.values()], b);
+}
+
+export function connectFloor(walls: Point[], b: Board): Point[] {
+  const blocked = new Set(walls.map(key)), cells = boardCells(b);
+  const start = cells.find(p => !blocked.has(key(p)));
+  if (!start) return walls;
+  const flood = () => {
+    const queue = [start], seen = new Set([key(start)]);
+    for (let i = 0; i < queue.length; i++) for (const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const p = { x: queue[i].x + dx, y: queue[i].y + dy }, id = key(p);
+      if (!inBoard(p,b) || blocked.has(id) || seen.has(id)) continue;
+      seen.add(id); queue.push(p);
+    }
+    return seen;
+  };
+  let reachable = flood(), island = cells.find(p => !blocked.has(key(p)) && !reachable.has(key(p)));
+  while (island) {
+    const queue = [island], previous = new Map<string, Point | null>([[key(island),null]]);
+    let door: Point | null = null;
+    for (let i = 0; i < queue.length && !door; i++) for (const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const p = { x: queue[i].x + dx, y: queue[i].y + dy }, id = key(p);
+      if (!inBoard(p,b) || previous.has(id)) continue;
+      previous.set(id,queue[i]); queue.push(p);
+      if (reachable.has(id)) { door = p; break; }
+    }
+    for (let p = door; p; p = previous.get(key(p)) ?? null) blocked.delete(key(p));
+    reachable = flood(); island = cells.find(p => !blocked.has(key(p)) && !reachable.has(key(p)));
+  }
+  return walls.filter(p => blocked.has(key(p)));
 }

@@ -100,7 +100,7 @@ export default function ReplayViewer() {
           </span>
         </Link>
         <nav className="mode-nav" aria-label="Game navigation">
-          <Link href="/">Fruit</Link>
+          <Link href="/food">Food</Link>
           <Link href="/hunter">Hunter</Link>
           <Link href="/challenge">Challenges</Link>
         </nav>
@@ -139,7 +139,7 @@ export default function ReplayViewer() {
                 <div className="board-overlay state-overlay">
                   <h2>Your next run.</h2>
                   <p>Finish a round in any mode to save a replay here.</p>
-                  <Link className="primary-button" href="/">
+                  <Link className="primary-button" href="/food">
                     Play a round →
                   </Link>
                 </div>

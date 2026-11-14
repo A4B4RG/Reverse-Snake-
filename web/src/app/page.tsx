@@ -1,2 +1,2 @@
-import ReverseSnake from "@/components/reverse-snake";
-export default function Home() { return <ReverseSnake />; }
+import Welcome from "@/components/welcome";
+export default function Home() { return <Welcome />; }

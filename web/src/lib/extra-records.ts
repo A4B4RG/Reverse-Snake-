@@ -25,7 +25,7 @@ export function readExtraRecords(): ExtraRecord[] {
           .filter(
             (r) =>
               r &&
-              ((r.version === GAME_VERSION && r.ruleset === RULESET)||(r.version === "1.3.0" && r.ruleset === "orchard-4")||(r.version === "1.2.0" && r.ruleset === "orchard-3")||(r.version === "1.1.0" && r.ruleset === "canopy-2")) &&
+              ((r.version === GAME_VERSION && r.ruleset === RULESET)||(r.version === "1.4.0" && r.ruleset === "orchard-5")||(r.version === "1.3.0" && r.ruleset === "orchard-4")||(r.version === "1.2.0" && r.ruleset === "orchard-3")||(r.version === "1.1.0" && r.ruleset === "canopy-2")) &&
               ["hunter", "challenge"].includes(r.meta?.mode) &&
               isRunMeta(r.meta) &&
               Number.isFinite(r.elapsed) &&

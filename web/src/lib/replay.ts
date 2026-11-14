@@ -33,9 +33,12 @@ import * as orchardChallenge from "./legacy/orchard3/challenge";
 import * as orchard4Game from "./legacy/orchard4/game";
 import * as orchard4Hunter from "./legacy/orchard4/hunter";
 import * as orchard4Challenge from "./legacy/orchard4/challenge";
-type PreviousEngine = boolean | "orchard3" | "orchard4";
-export const GAME_VERSION = "1.4.0";
-export const RULESET = "orchard-5";
+import * as orchard5Game from "./legacy/orchard5/game";
+import * as orchard5Hunter from "./legacy/orchard5/hunter";
+import * as orchard5Challenge from "./legacy/orchard5/challenge";
+type PreviousEngine = boolean | "orchard3" | "orchard4" | "orchard5";
+export const GAME_VERSION = "1.5.0";
+export const RULESET = "jungle-6";
 export type RunMode = GameMode | "hunter" | "challenge";
 export type RunMeta = {
   mode: RunMode;
@@ -106,6 +109,14 @@ const direction = (v: unknown): v is Direction | null =>
   v === null || ["up", "down", "left", "right"].includes(v as string);
 export const isHunter = (s: RunState): s is HunterState => "turns" in s;
 export function createRun(meta: RunMeta, legacy: PreviousEngine = false): RunState {
+  if (legacy === "orchard5") {
+    const s = meta.mode === "hunter"
+      ? orchard5Hunter.createHunter(meta.arena, meta.difficulty, meta.seed, meta.board, meta.learning, meta.appearance, meta.hunterMode)
+      : meta.mode === "challenge"
+        ? orchard5Challenge.createChallenge(orchard5Challenge.CHALLENGES.find(c => c.id === meta.challenge)!, meta.board, meta.learning, meta.appearance)
+        : orchard5Game.createGame(meta.arena, meta.difficulty, meta.mode, meta.board, meta.learning, meta.appearance);
+    return { ...s, phase: "running" } as RunState;
+  }
   if (legacy === "orchard4") {
     const s = meta.mode === "hunter"
       ? orchard4Hunter.createHunter(meta.arena, meta.difficulty, meta.seed, meta.board, meta.learning, meta.appearance)
@@ -171,6 +182,21 @@ export function applyCommand(
   meta: RunMeta,
   legacy: PreviousEngine = false,
 ): RunState {
+  if (legacy === "orchard5") {
+    if (command.action === "resize") return (isHunter(s)
+      ? orchard5Hunter.resizeHunter(s as orchard5Hunter.HunterState, command.board)
+      : orchard5Game.resizeGame(s as orchard5Game.GameState, command.board)) as RunState;
+    if (command.action === "step") return (isHunter(s)
+      ? orchard5Hunter.hunterStep(s as orchard5Hunter.HunterState)
+      : meta.mode === "challenge"
+        ? orchard5Challenge.challengeStep(s as orchard5Game.GameState, command.direction, orchard5Challenge.CHALLENGES.find(c => c.id === meta.challenge)!)
+        : orchard5Game.step(s as orchard5Game.GameState, command.direction)) as RunState;
+    if (command.action === "steer" && command.direction) return (isHunter(s)
+      ? orchard5Hunter.turnHunter(s as orchard5Hunter.HunterState, command.direction)
+      : orchard5Game.steer(s as orchard5Game.GameState, command.direction)) as RunState;
+    if (command.action === "dash") return isHunter(s) ? s : orchard5Game.dash(s as orchard5Game.GameState, command.direction) as RunState;
+    legacy = false;
+  }
   if (legacy === "orchard4") {
     if (command.action === "resize") return (isHunter(s)
       ? orchard4Hunter.resizeHunter(s as orchard4Hunter.HunterState, command.board)
@@ -343,10 +369,11 @@ export function parseReplay(value: unknown): Replay | null {
         (r.format === 1 && r.version === "1.1.0" && r.ruleset === "canopy-2") ||
         (r.format === 2 && r.version === "1.2.0" && r.ruleset === "orchard-3") ||
         (r.format === 2 && r.version === "1.3.0" && r.ruleset === "orchard-4") ||
+        (r.format === 2 && r.version === "1.4.0" && r.ruleset === "orchard-5") ||
         (r.format === 2 && r.version === GAME_VERSION && r.ruleset === RULESET)
       ) ||
       !isRunMeta(m) ||
-      (["canopy-2", "orchard-3"].includes(r.ruleset) && m.arena >= 5) ||
+      (["canopy-2", "orchard-3"].includes(r.ruleset) && m.arena >= 5) || (["orchard-4", "orchard-5"].includes(r.ruleset) && m.arena >= 10) ||
       (r.preview !== undefined && typeof r.preview !== "boolean") ||
       !m ||
       !["levels", "survival", "hunter", "challenge"].includes(m.mode) ||
@@ -395,7 +422,7 @@ export function parseReplay(value: unknown): Replay | null {
           return null;
       } else if (c.action === "resize") {
         if (r.format !== 2 || !validBoard(c.board)) return null;
-      } else if (!(["clear", "pause", "resume"].includes(c.action) || (r.ruleset === RULESET && c.action === "finish"))) return null;
+      } else if (!(["clear", "pause", "resume"].includes(c.action) || ([RULESET, "orchard-5"].includes(r.ruleset) && c.action === "finish"))) return null;
     }
     return r;
   } catch {
@@ -410,7 +437,7 @@ export class ReplayCursor {
   valid = true;
   engine: PreviousEngine;
   constructor(public replay: Replay) {
-    this.engine = replay.format === 1 ? true : replay.ruleset === "orchard-3" ? "orchard3" : replay.ruleset === "orchard-4" ? "orchard4" : false;
+    this.engine = replay.format === 1 ? true : replay.ruleset === "orchard-3" ? "orchard3" : replay.ruleset === "orchard-4" ? "orchard4" : replay.ruleset === "orchard-5" ? "orchard5" : false;
     this.state = createRun(replay.meta, this.engine);
   }
   advance() {

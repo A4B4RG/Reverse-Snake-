@@ -72,7 +72,7 @@ test("Hunter permits departing tail and loses to other body or obstacles", () =>
     "lost",
   );
   assert.equal(
-    hunterStep({ ...s, arena: 1, snake: [{ x: 6, y: 7 }], direction: "right" })
+    hunterStep({ ...s, arena: 1, walls: createHunter(1).walls, snake: [{ x: 6, y: 7 }], direction: "right" })
       .phase,
     "lost",
   );

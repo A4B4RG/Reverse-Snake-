@@ -11,3 +11,6 @@ The font files are bundled through Fontsource and their source metadata identifi
 A combined notice is also shipped as public/third-party-notices.txt so the deployed font/icon distribution retains accessible terms.
 
 Project-authored Canvas, SVG, CSS and synthesized sounds introduce no third-party art licence. Repository ownership terms remain for the project owner to decide: no root project-wide licence was chosen or implied. Public availability on GitHub alone does not grant a licence for project-authored code/art.
+
+
+Canopy Dawn (public/audio/canopy-dawn.mp3) is an original project-authored composition, generated from the piano/violin/viola/cello score in scripts/compose-jungle.py. It uses no Pokémon recording, melody or downloaded instrument sample. Numpy and soundfile are optional authoring dependencies; the shipped game serves the local MP3 and needs neither Python nor those packages at runtime. The owner's repository licence decision remains unchanged.

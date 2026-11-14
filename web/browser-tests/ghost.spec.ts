@@ -8,7 +8,7 @@ test("the full recorded fruit ghost stays below 45% opacity", async ({
     localStorage.setItem("reverse-snake:theme:v1", "dark"),
   );
   await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
-  await page.goto("/");
+  await page.goto("/food");
   await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   await page.clock.pauseAt(new Date("2026-11-14T00:00:01Z"));
   await page.getByRole("button", { name: "Let’s play" }).dispatchEvent("click");

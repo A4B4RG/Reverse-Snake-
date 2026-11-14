@@ -4,7 +4,7 @@ export type Run = { id: string; arena: number; difficulty: Difficulty; mode: Gam
 import { earnProgress, parseProgress } from "./level-progress";
 export type SavedData = { sound: boolean; difficulty: Difficulty; runs: Run[]; attempts: number; wins: number; best: number; unlocked: number; stars: number[] };
 const KEY = "reverse-snake:v1";
-export const DEFAULT_DATA: SavedData = { sound: true, difficulty: "normal", runs: [], attempts: 0, wins: 0, best: 0, unlocked: 0, stars: Array(10).fill(0) };
+export const DEFAULT_DATA: SavedData = { sound: true, difficulty: "easy", runs: [], attempts: 0, wins: 0, best: 0, unlocked: 0, stars: Array(ARENAS.length).fill(0) };
 const validDifficulty = (v: unknown): v is Difficulty => v === "easy" || v === "normal" || v === "hard";
 const nonnegative = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v) && v >= 0;
 
@@ -16,7 +16,7 @@ export function readSavedData(): SavedData {
     return {
       stars: parseProgress(data).stars,
       sound: typeof data.sound === "boolean" ? data.sound : true,
-      difficulty: validDifficulty(data.difficulty) ? data.difficulty : "normal",
+      difficulty: validDifficulty(data.difficulty) ? data.difficulty : "easy",
       runs, attempts: nonnegative(data.attempts) ? data.attempts : 0,
       wins: nonnegative(data.wins) ? data.wins : 0, best: nonnegative(data.best) ? data.best : 0,
       unlocked: Number.isInteger(data.unlocked) && data.unlocked >= 0 && data.unlocked < ARENAS.length ? data.unlocked : Math.min(ARENAS.length - 1, runs.reduce((n: number, r: Run) => r.mode === "levels" && r.won ? Math.max(n, r.arena + 1) : n, 0)),

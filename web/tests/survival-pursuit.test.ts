@@ -28,7 +28,7 @@ test("the reported Wild Heart root wall cannot trap a hunter in an endless respa
   }
 });
 
-test("a fresh survival hunter routes around the wall toward the current fruit position", () => {
+test("a stunned survival hunter resumes routing toward the current fruit position", () => {
   for (const player of [{ x: 19, y: 11 }, { x: 17, y: 14 }, { x: 19, y: 1 }]) {
     const respawn = finish({ ...reportedState(), player }, "won", "obstacle");
     const game = pursue(respawn);
@@ -49,7 +49,7 @@ test("both modes plan a turn before a known wall and follow a moved target at th
   }
 });
 
-test("a mid-lunge dodge still baits a Survival crash and the respawn clears the old commitment", () => {
+test("a mid-lunge dodge still baits a Survival crash and the stun clears the old commitment", () => {
   let game: GameState = { ...createGame(0, "easy", "survival"), phase: "running", player: { x: 19, y: 4 }, snake: [{ x: 17, y: 4 }, { x: 16, y: 4 }, { x: 15, y: 4 }], snakeDirection: "right" };
   game = moveSnake(game);
   assert.equal(game.committedMoves, 3);
@@ -57,6 +57,7 @@ test("a mid-lunge dodge still baits a Survival crash and the respawn clears the 
   assert.deepEqual(game.snake[0], { x: 19, y: 4 });
   game = moveSnake(game);
   assert.equal(game.phase, "running"); assert.equal(game.escapes, 1);
-  assert.equal(game.committedMoves, 0); assert.equal(game.lunges, 0);
-  assert.equal(pursue(game).phase, "lost", "the replacement hunter resumes pursuing the new fruit position");
+  assert.equal(game.committedMoves, 0); assert(game.snakeStun > 0);
+  assert.deepEqual(game.snake[0], { x: 19, y: 4 });
+  assert.equal(pursue(game).phase, "lost", "the stunned hunter resumes pursuing the new fruit position");
 });

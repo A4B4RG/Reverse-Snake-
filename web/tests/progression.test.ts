@@ -9,7 +9,7 @@ import * as orchard from "../src/lib/legacy/orchard3/game";
 import { obstaclesFor } from "../src/lib/game";
 
 test("level targets increase; fullscreen walls retain their occupied area", () => {
-  assert.equal(ARENAS.length, 10);
+  assert.equal(ARENAS.length, 30);
   for (let i = 0; i < ARENAS.length; i++) {
     assert(ARENAS[i].scoreTarget > (ARENAS[i - 1]?.scoreTarget ?? 0));
     const small = obstaclesFor(i, { columns: 20, rows: 20 }).length / 400;

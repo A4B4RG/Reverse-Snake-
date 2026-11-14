@@ -41,6 +41,7 @@ import {
   type Appearance,
 } from "@/lib/appearance";
 import { fullscreenTransition } from "./use-fullscreen";
+import { unlockMusic } from "@/lib/music";
 import type { Board } from "@/lib/board";
 
 export function useGame(ghostEnabled = false) {
@@ -198,6 +199,7 @@ export function useGame(ghostEnabled = false) {
   }, [commit, endRound, loadSaved, awardProgress]);
 
   const start = useCallback(() => {
+    unlockMusic();
     loadSaved();
     audioRef.current?.unlock();
     audioRef.current?.play("start");
@@ -251,13 +253,13 @@ export function useGame(ghostEnabled = false) {
     commit({ ...gameRef.current, pendingDirection: null, phase: "running" });
   }, [commit]);
 
-  const dash = useCallback(() => {
+  const dash = useCallback((heading?: Direction) => {
     const previous = gameRef.current;
-    const next = dashGame(previous, directionRef.current);
+    const next = dashGame(previous, heading ?? directionRef.current);
     if (next === previous) return;
     recorderRef.current?.add({
       action: "dash",
-      direction: directionRef.current,
+      direction: heading ?? directionRef.current,
     });
     audioRef.current?.play("dash");
     commit(next);

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { PlaySettings } from "./play-settings";
 import { ChevronDown, Moon, Sun, X } from "lucide-react";
 import { setTheme, useTheme } from "@/lib/theme";
 
@@ -64,9 +65,11 @@ export function GameMenu({ currentMode, onOpen, children }: { currentMode?: "fru
           setNotice(setTheme(value) ? "" : "Theme changed for this visit. Browser storage is unavailable.");
         }}>{value === "light" ? <Sun size={17} /> : <Moon size={17} />}{value === "light" ? "Light" : "Dark"}</button>)}
       </div></fieldset>
+      <PlaySettings/>
       {notice && <p className="theme-notice" role="status">{notice}</p>}
       <div className="game-menu">
-        {currentMode !== "fruit" && <Link href="/" onClick={() => close(false)}>Fruit · escape the hunter</Link>}
+        <Link href="/" onClick={() => close(false)}>Welcome screen</Link>
+        {currentMode !== "fruit" && <Link href="/food" onClick={() => close(false)}>Fruit · escape the hunter</Link>}
         {currentMode !== "hunter" && <Link href="/hunter" onClick={() => close(false)}>Hunter · control the snake</Link>}
         <Link href="/challenge" onClick={() => close(false)}>Local Challenges</Link>
         <Link href="/replays" onClick={() => close(false)}>Watch saved replays</Link>

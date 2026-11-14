@@ -11,7 +11,9 @@ import {
   type Direction,
   type Phase,
   type Point,
+  type BiteEffect,
 } from "./game";
+import { relocateWalls, rescaleWalls } from "./moving-walls";
 
 import {
   DEFAULT_BOARD,
@@ -36,6 +38,13 @@ export type PowerUp = { kind: "speed" | "stun"; position: Point };
 export const hunterInterval = (s: HunterState) => DIFFICULTIES[s.difficulty].interval / (s.speedRemaining > 0 ? 2 : 1);
 export const fruitInterval = (difficulty: Difficulty) => DIFFICULTIES[difficulty].interval / { easy: 0.5, normal: 0.75, hard: 1 }[difficulty];
 export type HunterState = {
+  walls: Point[];
+  incomingWalls: Point[];
+  wallAnimation: number;
+  nextWallShift: number;
+  pendingGrowth: number;
+  growthClock: number;
+  bite: BiteEffect | null;
   mode: GameMode;
   levelCleared: boolean;
   powerUps: PowerUp[];
@@ -72,9 +81,10 @@ export function spawnFood(
   seed: number,
   board: Board = DEFAULT_BOARD,
   extraBlocked: Point[] = [],
+  terrain = obstaclesFor(arena, board),
 ) {
   const blocked = new Set(
-    [...snake, ...extraBlocked, ...obstaclesFor(arena, board)].map(
+    [...snake, ...extraBlocked, ...terrain].map(
       (p) => p.y * board.columns + p.x,
     ),
   );
@@ -108,6 +118,8 @@ export function createHunter(
     obstaclesFor(arena, board),
   );
   let s: HunterState = {
+    walls: obstaclesFor(arena, board), incomingWalls: [], wallAnimation: 0, nextWallShift: 45_000,
+    pendingGrowth: 0, growthClock: 0, bite: null,
     mode,
     levelCleared: false,
     powerUps: [],
@@ -138,7 +150,7 @@ export function createHunter(
   return spawnPowerUp(s);
 }
 export function spawnPowerUp(s: HunterState): HunterState {
-  const spawned = spawnFood(s.arena, s.snake, s.seed, s.board, [...s.powerUps.map(p => p.position), ...(s.food ? [s.food] : [])]);
+  const spawned = spawnFood(s.arena, s.snake, s.seed, s.board, [...s.powerUps.map(p => p.position), ...(s.food ? [s.food] : [])], s.walls);
   return spawned.food ? { ...s, seed: spawned.seed, powerUps: [...s.powerUps, { kind: s.nextPowerUp, position: spawned.food }], nextPowerUp: s.nextPowerUp === "speed" ? "stun" : "speed", powerUpClock: 0 } : s;
 }
 export function endHunt(s: HunterState): HunterState {
@@ -162,7 +174,24 @@ export function hunterStep(s: HunterState): HunterState {
     clock: s.clock + STEP_MS,
     fruitClock: s.stunRemaining > 0 ? 0 : s.fruitClock + STEP_MS,
     elapsed: s.elapsed + STEP_MS,
+    growthClock: s.growthClock + STEP_MS,
+    wallAnimation: Math.max(0, s.wallAnimation - STEP_MS),
+    bite: s.bite && s.bite.remaining > STEP_MS ? { ...s.bite, remaining: s.bite.remaining - STEP_MS } : null,
   };
+  if (s.wallAnimation > 600 && next.wallAnimation <= 600) {
+    const safe = [...next.snake, ...(next.food ? [next.food] : []), ...next.powerUps.map(p => p.position)];
+    next.walls = next.incomingWalls.filter(p => !safe.some(q => equal(p,q)));
+  }
+  if (s.difficulty === "hard" && next.elapsed >= next.nextWallShift) {
+    next.seed = randomSeed(next.seed);
+    next.incomingWalls = relocateWalls(next.walls, next.board, [...next.snake, ...(next.food ? [next.food] : []), ...next.powerUps.map(p => p.position)], next.seed);
+    next.wallAnimation = 1200;
+    next.nextWallShift += 30_000;
+  }
+  if (next.growthClock >= (s.difficulty === "easy" ? 20_000 : 10_000)) {
+    next.growthClock = 0;
+    if (next.snake.length < next.board.columns * next.board.rows - next.walls.length - 2) next.pendingGrowth = Math.min(4, next.pendingGrowth + 1);
+  }
   if (next.powerUps.length < 2 && next.powerUpClock >= 8000) next = spawnPowerUp(next);
   const interval = hunterInterval(s);
   if (next.clock < interval) return evadeFruit(next);
@@ -171,11 +200,12 @@ export function hunterStep(s: HunterState): HunterState {
   next.turns = s.turns.slice(1);
   const vector = VECTORS[next.direction],
     head = { x: s.snake[0].x + vector.x, y: s.snake[0].y + vector.y };
-  const growing = !!s.food && equal(head, s.food);
+  const eating = !!s.food && equal(head, s.food);
+  const growing = eating || next.pendingGrowth > 0;
   const body = growing ? s.snake : s.snake.slice(0, -1);
   const reason = !inside(head, s.board)
     ? "wall"
-    : obstaclesFor(s.arena, s.board).some((p) => equal(p, head))
+    : next.walls.some((p) => equal(p, head))
       ? "obstacle"
       : body.some((p) => equal(p, head))
         ? "body"
@@ -186,7 +216,7 @@ export function hunterStep(s: HunterState): HunterState {
       p = { x: s.snake[0].x + v.x, y: s.snake[0].y + v.y };
     return (
       inside(p, s.board) &&
-      ![...obstaclesFor(s.arena, s.board), ...s.snake.slice(0, -1)].some((q) =>
+      ![...next.walls, ...s.snake.slice(0, -1)].some((q) =>
         equal(p, q),
       )
     );
@@ -201,11 +231,13 @@ export function hunterStep(s: HunterState): HunterState {
       ),
     };
   next.snake = [head, ...(growing ? s.snake : s.snake.slice(0, -1))];
-  if (growing) {
+  if (growing) next.pendingGrowth = Math.max(0, next.pendingGrowth - 1);
+  if (eating) {
+    next.bite = { point: head, direction: next.direction, remaining: 600 };
     next.collected++;
     next.score += 100 * DIFFICULTIES[s.difficulty].multiplier;
-    let spawned = spawnFood(s.arena, next.snake, next.seed, s.board, next.powerUps.map(p => p.position));
-    if (!spawned.food) spawned = spawnFood(s.arena, next.snake, next.seed, s.board);
+    let spawned = spawnFood(s.arena, next.snake, next.seed, s.board, next.powerUps.map(p => p.position), next.walls);
+    if (!spawned.food) spawned = spawnFood(s.arena, next.snake, next.seed, s.board, [], next.walls);
     Object.assign(next, spawned);
     next.powerUps = next.powerUps.filter(p => !next.food || !equal(p.position, next.food));
     next.fruitClock = 0;
@@ -234,7 +266,7 @@ export function evadeFruit(s: HunterState): HunterState {
     s.fruitClock + 0.000001 < fruitInterval(s.difficulty)
   )
     return s;
-  const blocked = [...obstaclesFor(s.arena, s.board), ...s.snake];
+  const blocked = [...s.walls, ...s.snake];
   const legal = MOVES.map((d) => {
     const v = VECTORS[d],
       p = { x: s.food!.x + v.x, y: s.food!.y + v.y };
@@ -305,7 +337,7 @@ export function evadeFruit(s: HunterState): HunterState {
 export function resizeHunter(s: HunterState, board: Board): HunterState {
   if (s.board.columns === board.columns && s.board.rows === board.rows)
     return s;
-  const obstacles = obstaclesFor(s.arena, board),
+  const obstacles = rescaleWalls(s.walls, s.board, board),
     snake = fitSnake(
       project(s.snake[0], s.board, board),
       s.snake.length,
@@ -325,5 +357,5 @@ export function resizeHunter(s: HunterState, board: Board): HunterState {
     blocked.push(position);
     return { ...power, position };
   });
-  return { ...s, board, snake, food, powerUps, fruitTrail: [] };
+  return { ...s, board, snake, food, powerUps, walls: obstacles, incomingWalls: rescaleWalls(s.incomingWalls, s.board, board), fruitTrail: [] };
 }

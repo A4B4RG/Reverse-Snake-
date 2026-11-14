@@ -11,6 +11,9 @@
 | UI icons | lucide-react package, exact version in lockfile | Lucide / Feather notices copied to docs/licences/Lucide.txt. |
 | Body font | @fontsource-variable/dm-sans | Bundled WOFF2; source metadata identifies Google Fonts DM Sans. OFL notice retained. |
 | Display font | @fontsource-variable/space-grotesk | Bundled WOFF2; source metadata identifies Space Grotesk / Google Fonts. OFL notice retained. |
+| Jungle music | public/audio/canopy-dawn.mp3; scripts/compose-jungle.py | Original 42.67-second stereo piano/violin/viola/cello composition and synthesizer. No borrowed recording/melody. |
+| Welcome role art | src/components/welcome.tsx; src/app/globals.css | Project-authored wrapping snake, apple reveal, logo and leaf artwork. |
+| Status animations | src/lib/render-game.ts | Golden halos/stars, skin-inverted electricity, bites and sinking/rising water walls. |
 | Sound effects | src/lib/audio.ts | Project-authored Web Audio synthesis; no downloaded recordings. |
 | Verification screenshots | docs/screenshots/ | Automated captures of this game, not runtime assets. |
 

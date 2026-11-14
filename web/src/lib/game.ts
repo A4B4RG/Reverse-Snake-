@@ -17,6 +17,7 @@ import {
   type Learning,
 } from "./learning";
 import { DEFAULT_APPEARANCE, type Appearance } from "./appearance";
+import { EXTRA_ARENAS } from "./maps";
 /** Original authored terrain coordinates, never the live board dimensions. */
 export const GRID = 20;
 export const STEP_MS = 20;
@@ -26,6 +27,10 @@ export const DASH_COOLDOWN = 4000;
 export const BOOST_INTERVAL = PLAYER_INTERVAL / 2;
 export const CLOSE_CALL_DURATION = { levels: 2000, survival: 5000 } as const;
 export const CLOSE_CALL_FLASH = 600;
+export const SNAKE_STUN_DURATION = 1600;
+export const SPLIT_AFTER = 60_000;
+export type BiteEffect = { point: Point; direction: Direction; remaining: number };
+export type RivalSnake = { body: Point[]; direction: Direction; clock: number; stun: number; committedMoves: number; lunges: number; pendingGrowth: number };
 
 export type Point = { x: number; y: number };
 export type Direction = "up" | "right" | "down" | "left";
@@ -125,6 +130,7 @@ export const ARENAS: Arena[] = [
   { name: "Ruined Courtyard", subtitle: "Find the broken gates.", description: "Broken outer walls surround a second courtyard with offset entrances.", length: 25, duration: 90_000, scoreTarget: 950, obstacles: [...line(3, 4, 13), ...line(3, 16, 13), ...line(3, 5, 7, true), ...line(16, 9, 8, true), ...line(7, 8, 6), ...line(7, 12, 6), ...line(12, 9, 3, true)] },
   { name: "Thorn Labyrinth", subtitle: "Every corner is a choice.", description: "Interlocking thorn walls reward sharp turns and planned exits.", length: 26, duration: 95_000, scoreTarget: 1100, obstacles: [...line(4, 4, 11, true), ...line(4, 4, 7), ...line(8, 8, 9), ...line(8, 8, 8, true), ...line(12, 4, 3, true), ...line(12, 12, 5), ...line(16, 12, 5, true), ...line(3, 17, 10)] },
   { name: "Crown Maze", subtitle: "Master the deep canopy.", description: "Nested broken walls and staggered baffles make the final chase a maze.", length: 28, duration: 100_000, scoreTarget: 1300, obstacles: [...line(3, 4, 14), ...line(3, 17, 14), ...line(3, 5, 8, true), ...line(16, 9, 8, true), ...line(7, 7, 6), ...line(7, 13, 6), ...line(7, 8, 3, true), ...line(12, 10, 3, true), ...line(10, 16, 3, true)] },
+  ...EXTRA_ARENAS,
 ];
 
 export const DIFFICULTIES: Record<
@@ -161,10 +167,17 @@ export const DIFFICULTIES: Record<
 };
 
 export interface GameState {
+  rival: RivalSnake | null;
+  snakeStun: number;
+  pendingGrowth: number;
+  growthClock: number;
+  hasSplit: boolean;
+  bite: BiteEffect | null;
   displayObstacles?: Point[];
   displayPowerUps?: { kind: "speed" | "stun"; position: Point }[];
   displaySpeedRemaining?: number;
   displayStunRemaining?: number;
+  displayWallAnimation?: number;
   levelCleared: boolean;
   board: Board;
   appearance: Appearance;
@@ -216,6 +229,41 @@ const distance = (a: Point, b: Point) =>
   Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 const occupied = (p: Point, points: Point[]) =>
   points.some((other) => equal(p, other));
+export const allSnakes = (s: GameState) => [...s.snake, ...(s.rival?.body ?? [])];
+const closeHeads = (s: GameState) => [s.snake[0], ...(s.rival ? [s.rival.body[0]] : [])];
+const collisionSegments = (s: GameState) => [...(s.pendingGrowth > 0 ? s.snake : s.snake.slice(0, -1)), ...(s.rival?.body ?? [])];
+export function outwardDirection(body: Point[]): Direction {
+  if (body.length < 2) return "up";
+  const dx = body[0].x - body[1].x, dy = body[0].y - body[1].y;
+  return dx ? dx > 0 ? "right" : "left" : dy > 0 ? "down" : "up";
+}
+export function stunSnake(s: GameState, trim = true): GameState {
+  return { ...s, snake: trim ? s.snake.slice(0, Math.max(4, s.snake.length - 2)) : s.snake, snakeStun: SNAKE_STUN_DURATION, snakeClock: 0, pendingGrowth: 0, committedMoves: 0, escapes: s.escapes + 1, reason: null };
+}
+function reversePrimary(s: GameState): GameState {
+  const snake = [...s.snake].reverse();
+  return { ...s, snake, snakeDirection: outwardDirection(snake), committedMoves: 0, snakeClock: 0 };
+}
+function shrinkMissedSnake(s: GameState, from: Point): GameState {
+  if (distance(from, s.snake[0]) === 1) return { ...s, snake: s.snake.slice(0, Math.max(4, s.snake.length - 1)), pendingGrowth: 0 };
+  return s.rival ? { ...s, rival: { ...s.rival, body: s.rival.body.slice(0, Math.max(4, s.rival.body.length - 1)), pendingGrowth: 0 } } : s;
+}
+
+export function movePack(s: GameState): GameState {
+  const interval = DIFFICULTIES[s.difficulty].interval;
+  const primaryDue = s.snakeStun === 0 && s.snakeClock >= interval;
+  const rivalDue = !!s.rival && s.rival.stun === 0 && s.rival.clock >= interval;
+  const primary = primaryDue ? moveSnake({ ...s, snakeClock: s.snakeClock - interval }) : s;
+  if (primary.phase !== "running" || !s.rival || !rivalDue) return primary;
+  const actor = s.rival;
+  const secondary = moveSnake({ ...s, snake: actor.body, snakeDirection: actor.direction, snakeClock: actor.clock - interval, snakeStun: actor.stun, committedMoves: actor.committedMoves, lunges: actor.lunges, pendingGrowth: actor.pendingGrowth, rival: { ...actor, body: s.snake } });
+  if (secondary.phase !== "running") return { ...primary, phase: secondary.phase, reason: secondary.reason, bite: secondary.bite };
+  if ((primaryDue && primary.snakeStun > 0 && secondary.snakeStun > 0) || primary.snake.some(p => secondary.snake.some(q => equal(p, q)))) {
+    const stopped = stunSnake(s, false);
+    return { ...stopped, rival: { ...actor, stun: SNAKE_STUN_DURATION, clock: 0, committedMoves: 0, pendingGrowth: 0 } };
+  }
+  return { ...primary, escapes: primary.escapes + secondary.escapes - s.escapes, rival: { body: secondary.snake, direction: secondary.snakeDirection, clock: secondary.snakeClock, stun: secondary.snakeStun, committedMoves: secondary.committedMoves, lunges: secondary.lunges, pendingGrowth: secondary.pendingGrowth } };
+}
 
 export function createGame(
   arena = 0,
@@ -247,6 +295,12 @@ export function createGame(
     [...obstacles, ...path],
   );
   return {
+    rival: null,
+    snakeStun: 0,
+    pendingGrowth: 0,
+    growthClock: 0,
+    hasSplit: false,
+    bite: null,
     board,
     learning,
     appearance,
@@ -286,41 +340,13 @@ export function finish(
   reason: EndReason,
 ): GameState {
   if (phase === "won" && (state.mode === "survival" || reason !== "target")) {
-    const obstacles = obstaclesFor(state.arena, state.board);
-    const head = nearestFree(
-      {
-        x:
-          state.player.x < state.board.columns / 2
-            ? state.board.columns - 1
-            : 0,
-        y: state.player.y < state.board.rows / 2 ? state.board.rows - 1 : 0,
-      },
-      state.board,
-      [...obstacles, state.player],
-    );
-    const heading: Direction = head.y > state.board.rows / 2 ? "up" : "down";
-    const snake = fitSnake(
-      head,
-      ARENAS[state.arena].length,
-      heading,
-      state.board,
-      [...obstacles, state.player],
-    );
-    return {
-      ...state,
-      snake,
-      snakeDirection: heading,
-      snakeClock: 0,
-      committedMoves: 0,
-      lunges: 0,
-      escapes: state.escapes + 1,
-      reason: null,
-    };
+    return stunSnake(state);
   }
   return {
     ...state,
     phase,
     reason,
+    bite: reason === "caught" ? { point: state.player, direction: state.rival?.body.some(p => equal(p, state.player)) ? state.rival.direction : state.snakeDirection, remaining: 600 } : state.bite,
     pendingDirection: null,
     score: Math.floor(state.score),
   };
@@ -337,7 +363,7 @@ function movePlayer(state: GameState, direction: Direction): GameState {
     const p = add(state.player, VECTORS[d]);
     return (
       inside(p, state.board) &&
-      !occupied(p, [...obstaclesFor(state.arena, state.board), ...state.snake])
+      !occupied(p, [...obstaclesFor(state.arena, state.board), ...allSnakes(state)])
     );
   });
   let moved = {
@@ -347,7 +373,7 @@ function movePlayer(state: GameState, direction: Direction): GameState {
     lastPlayerMove: state.elapsed,
     score: state.score,
   };
-  if (!occupied(next, state.snake))
+  if (!occupied(next, allSnakes(state)))
     moved = {
       ...moved,
       learning: {
@@ -366,14 +392,14 @@ function movePlayer(state: GameState, direction: Direction): GameState {
       },
     };
   // The whole snake is dangerous, including when the player moves into its body.
-  if (occupied(next, state.snake)) return finish(moved, "lost", "caught");
+  if (occupied(next, allSnakes(state))) return finish(moved, "lost", "caught");
   if (state.mode === "levels") moved.score += DIFFICULTIES[state.difficulty].multiplier;
   // A close call is a safe exit from the head's adjacent cell. Standing still,
   // brushing the tail, and blocked moves cannot award or refresh a boost.
   if (
-    distance(state.player, state.snake[0]) === 1 &&
-    distance(next, state.snake[0]) > 1
+    closeHeads(state).some(head => distance(state.player, head) === 1 && distance(next, head) > 1)
   ) {
+    moved = shrinkMissedSnake(moved, state.player);
     moved = {
       ...moved,
       boostRemaining: CLOSE_CALL_DURATION[state.mode],
@@ -396,7 +422,7 @@ export function steer(state: GameState, direction: Direction): GameState {
 
 /** Shortest walking distances to the current fruit, avoiding stones and body.
  * The departing tail remains traversable, just as it is in collision handling.
- * Rebuild at each lunge so movement/respawns cannot retain an obsolete route.
+ * Rebuild at each lunge so movement and tail reversal cannot retain an obsolete route.
  */
 function pursuitDistances(
   state: GameState,
@@ -406,7 +432,7 @@ function pursuitDistances(
   const blocked = new Set(
     [
       ...obstaclesFor(state.arena, state.board),
-      ...state.snake.slice(0, -1),
+      ...collisionSegments(state),
     ].map(index),
   );
   const distances = Array<number>(state.board.columns * state.board.rows).fill(
@@ -443,7 +469,7 @@ function selectSnakeDirection(state: GameState, routes: number[]): Direction {
       inside(p, state.board) &&
       !occupied(p, [
         ...obstaclesFor(state.arena, state.board),
-        ...state.snake.slice(0, -1),
+        ...collisionSegments(state),
       ])
     );
   });
@@ -472,7 +498,7 @@ function selectSnakeDirection(state: GameState, routes: number[]): Direction {
       const blocked =
         !inside(next, state.board) ||
         occupied(next, obstaclesFor(state.arena, state.board)) ||
-        occupied(next, state.snake.slice(0, -1));
+        occupied(next, collisionSegments(state));
       if (blocked) return Infinity;
       const route = routes[next.y * state.board.columns + next.x];
       // If the moving body temporarily cuts off the fruit, keep moving through
@@ -571,9 +597,10 @@ export function moveSnake(state: GameState): GameState {
   if (occupied(head, obstaclesFor(state.arena, state.board)))
     return finish(next, "won", "obstacle");
   // Moving into the tail is legal: that cell is vacated in this same tick.
-  if (occupied(head, state.snake.slice(0, -1)))
+  if (occupied(head, collisionSegments(state)))
     return finish(next, "won", "body");
-  next.snake = [head, ...state.snake.slice(0, -1)];
+  next.snake = [head, ...(state.pendingGrowth > 0 ? state.snake : state.snake.slice(0, -1))];
+  next.pendingGrowth = Math.max(0, state.pendingGrowth - 1);
   return equal(head, state.player) ? finish(next, "lost", "caught") : next;
 }
 
@@ -610,7 +637,11 @@ export function step(state: GameState, direction: Direction | null): GameState {
     ...state,
     elapsed: state.elapsed + STEP_MS,
     playerClock: state.playerClock + STEP_MS,
-    snakeClock: state.snakeClock + STEP_MS,
+    snakeClock: state.snakeStun > 0 ? 0 : state.snakeClock + STEP_MS,
+    snakeStun: Math.max(0, state.snakeStun - STEP_MS),
+    growthClock: state.growthClock + STEP_MS,
+    bite: state.bite && state.bite.remaining > STEP_MS ? { ...state.bite, remaining: state.bite.remaining - STEP_MS } : null,
+    rival: state.rival ? { ...state.rival, clock: state.rival.stun > 0 ? 0 : state.rival.clock + STEP_MS, stun: Math.max(0, state.rival.stun - STEP_MS) } : null,
     dashCooldown: Math.max(0, state.dashCooldown - STEP_MS),
     dashFlash: Math.max(0, state.dashFlash - STEP_MS),
     boostRemaining: Math.max(0, state.boostRemaining - STEP_MS),
@@ -627,21 +658,27 @@ export function step(state: GameState, direction: Direction | null): GameState {
     if (heading) next = movePlayer(next, heading);
     if (next.phase !== "running") return next;
   }
-  if (next.snakeClock >= DIFFICULTIES[next.difficulty].interval) {
-    next.snakeClock -= DIFFICULTIES[next.difficulty].interval;
-    next = moveSnake(next);
-    if (next.phase !== "running") return next;
+  if (state.snakeStun > 0 && next.snakeStun === 0) next = reversePrimary(next);
+  if (state.rival && state.rival.stun > 0 && next.rival?.stun === 0) {
+    const body = [...next.rival.body].reverse();
+    next.rival = { ...next.rival, body, direction: outwardDirection(body), committedMoves: 0, clock: 0 };
   }
-  const arena = ARENAS[next.arena];
-  if (next.mode === "survival") return next;
+  const growthInterval = next.difficulty === "easy" ? 20_000 : 10_000;
+  if (next.growthClock >= growthInterval) {
+    next.growthClock -= growthInterval;
+    const capacity = next.board.columns * next.board.rows - obstaclesFor(next.arena, next.board).length - 4;
+    if (allSnakes(next).length < capacity) {
+      next.pendingGrowth = Math.min(4, next.pendingGrowth + 1);
+      if (next.rival) next.rival = { ...next.rival, pendingGrowth: Math.min(4, next.rival.pendingGrowth + 1) };
+    }
+  }
+  next = movePack(next);
+  if (next.phase !== "running") return next;
+  if (!next.hasSplit && next.elapsed >= SPLIT_AFTER && next.snake.length >= 18 && next.snakeStun === 0) {
+    const middle = Math.ceil(next.snake.length / 2), body = next.snake.slice(middle).reverse();
+    next = { ...next, snake: next.snake.slice(0, middle), hasSplit: true, pendingGrowth: 0, rival: { body, direction: outwardDirection(body), clock: 0, stun: 0, committedMoves: 0, lunges: 0, pendingGrowth: 0 } };
+  }
   next = qualifyLevel(next);
-  const targetLength = Math.max(
-    3,
-    arena.length -
-      Math.floor(Math.min(next.score, arena.scoreTarget) / (arena.scoreTarget / (arena.length - 3))),
-  );
-  if (next.snake.length > targetLength)
-    next.snake = next.snake.slice(0, targetLength);
   return next;
 }
 
@@ -661,11 +698,13 @@ export function resizeGame(state: GameState, board: Board): GameState {
     board,
     [...obstacles, player],
   );
+  const rival = state.rival ? { ...state.rival, body: fitSnake(project(state.rival.body[0], state.board, board), state.rival.body.length, state.rival.direction, board, [...obstacles, player, ...snake]), committedMoves: 0 } : null;
   return {
     ...state,
     board,
     player,
     snake,
+    rival,
     committedMoves: 0,
     trail: [],
     boostTrail: [],

@@ -2,6 +2,13 @@
 
 **As of 14 November 2026**
 
+## Current scenario — browser release 1.5.0
+
+The current browser edition has 30 connected maps, score-gated Food and Hunter Levels with saved stars, both Survival modes, local Challenges and deterministic Replays. Food hunters grow, split into two, stun in place after collision and resume from their tails; Hunter keeps one controlled snake with random speed/Stun powers and relocating Hard walls. The welcome/role/instruction flow, default Easy and light theme, named character options, directional swipes, double-tap dash, touch sensitivity, frame settings and original jungle music are implemented. The playing board fills the available rectangle and expands in fullscreen.
+
+The repository is [A4B4RG/Reverse-Snake-](https://github.com/A4B4RG/Reverse-Snake-) and delivery uses `main` / `origin/main` with the existing GitHub Actions and Vercel integration. Current source, checks and delivery evidence are described in [CURRENT_STATE.md](web/docs/CURRENT_STATE.md), [VERIFICATION.md](web/docs/VERIFICATION.md) and [RELEASE.md](web/docs/RELEASE.md). Hosted Vercel gameplay remains unverified under the existing user waiver. The Python/Kivy prototype is preserved; online PvP, an editor and native Android packaging remain separate scope. These statements describe progress and do not define completion.
+
+## Preserved earlier scenario
 This snapshot is preserved as project history. For the subsequent implementation and release state, see [the current browser report](web/docs/CURRENT_STATE.md). This file describes progress; the separate complete-build specification defines the requested work.
 
 Reverse Snake is a playable browser game with a deployed website, a GitHub repository, automated regression coverage, and a preserved Python/Kivy prototype. The browser edition in `web/` is the current implementation. Its core game loop, jungle presentation, Levels and Survival modes, local scores, and input handling are implemented. The broader Phaser migration and online platform remain future scope.

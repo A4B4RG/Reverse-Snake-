@@ -620,3 +620,80 @@ body { height: 100dvh; display: flex; flex-direction: column; padding: env(safe-
   .extra-layout .game-footer { display:none; }
   .board-overlay h2 { font-size:clamp(28px,8vw,44px);letter-spacing:-1px; }
 }
+
+.play-settings { border:0; padding:12px 0; display:grid; gap:10px; border-top:1px solid var(--line); }
+.play-settings legend { font-size:11px; text-transform:uppercase; letter-spacing:.08em; padding-top:8px; }
+.play-settings label { display:grid; grid-template-columns:1fr auto; gap:4px; font-size:12px; }
+.play-settings select,.play-settings input[type="range"] { grid-column:1/-1; width:100%; min-height:32px; accent-color:var(--rush); }
+.play-settings select { border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--forest); padding:6px; }
+.play-settings .music-setting { display:flex; justify-content:space-between; align-items:center; min-height:32px; }
+.settings-note { font-size:10px; color:var(--muted); margin:0; }
+.welcome-page { position:relative; width:100%; height:100dvh; overflow:auto; padding:24px clamp(20px,5vw,80px); background:radial-gradient(ellipse at 50% 45%,var(--panel),var(--paper)); color:var(--forest); }
+.welcome-header { position:relative;z-index:3;display:flex;justify-content:space-between;align-items:center; }
+.welcome-header>a { display:flex;align-items:center;gap:10px;font-weight:700; }
+.welcome-header>a svg { width:40px;height:40px; }
+.welcome-fronds { position:absolute;inset:100px 0 0;overflow:hidden;pointer-events:none;opacity:.12; }
+.welcome-fronds svg { position:absolute;width:40vw;height:60vh; }
+.welcome-fronds svg:nth-child(1) { left:-20vw;top:-10vh;transform:rotate(40deg); }
+.welcome-fronds svg:nth-child(2) { right:-20vw;top:15vh;transform:rotate(-40deg); }
+.welcome-fronds svg:nth-child(3) { left:-18vw;bottom:-25vh;transform:rotate(100deg); }
+.welcome-fronds svg:nth-child(4) { right:-18vw;bottom:-30vh;transform:rotate(-100deg); }
+.welcome-intro,.role-screen,.welcome-guide { position:relative;z-index:1;max-width:1000px;margin:clamp(24px,7vh,80px) auto 0;text-align:center; }
+.welcome-logo svg { width:90px;height:90px; }
+.welcome-kicker { font-size:12px;text-transform:uppercase;letter-spacing:.2em;color:var(--muted);margin:10px 0; }
+.welcome-intro h1 { font-family:"Space Grotesk Variable",sans-serif;line-height:.95;font-size:clamp(56px,9vw,120px);letter-spacing:-.05em;margin:15px 0 24px; }
+.welcome-intro h1 span,.welcome-guide h1 span { color:var(--amber-ink,#996000); }
+.welcome-intro>p,.role-screen>p { margin-bottom:22px; }
+.welcome-start { margin:32px auto 0;min-width:180px;justify-content:space-between; }
+.welcome-start svg { animation:welcome-float 3s ease-in-out infinite; }
+@keyframes welcome-float { 50% { transform:translateY(-7px); } }
+.role-screen h1,.welcome-guide h1 { font-size:clamp(30px,4vw,54px);line-height:1.08;letter-spacing:-.035em; }
+.role-options { display:grid;grid-template-columns:repeat(2,1fr);gap:24px;max-width:700px;margin:36px auto 20px; }
+.role-card { position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:250px;background:var(--panel);color:var(--forest);border:1px solid var(--line);border-radius:30px;transition:transform .25s,box-shadow .25s; }
+.role-card:hover,.role-card:focus-visible { transform:translateY(-6px);box-shadow:0 18px 40px #003e3322; }
+.role-art svg { width:64px;height:64px; }
+.role-title { font-size:32px;font-weight:700;z-index:2;transition:opacity .3s; }
+.role-caption { font-size:13px;color:var(--muted);z-index:2; }
+.wrap-snake { position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity .2s; }
+.wrap-snake path { fill:none;stroke:var(--rush);stroke-width:17;stroke-linecap:round;stroke-dasharray:900;stroke-dashoffset:900;transition:stroke-dashoffset .8s ease; }
+.wrap-snake ellipse { fill:var(--rush); }.wrap-snake circle { fill:var(--forest); }
+.hunter-role:hover .wrap-snake,.hunter-role:focus-visible .wrap-snake { opacity:1; }
+.hunter-role:hover .wrap-snake path,.hunter-role:focus-visible .wrap-snake path { stroke-dashoffset:0; }
+.hover-apple { position:absolute;inset:10%;display:grid;place-items:center;transform:scale(.3) translateY(100%);opacity:0;transition:opacity .4s,transform .5s; }
+.hover-apple svg { width:140px;height:140px; }
+.food-role:hover .hover-apple,.food-role:focus-visible .hover-apple { opacity:1;transform:scale(1) translateY(-8%); }
+.food-role:hover .role-title,.food-role:focus-visible .role-title,.food-role:hover .role-art,.food-role:focus-visible .role-art { opacity:0; }
+.welcome-guide { margin-top:24px; }.welcome-guide-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:24px 0;text-align:left; }
+.welcome-guide-grid article { padding:20px;border:1px solid var(--line);background:var(--panel);border-radius:20px; }
+.welcome-guide-grid svg { color:var(--rush);width:22px; }
+.welcome-guide-grid h2 { font-size:18px;margin:8px 0; }.welcome-guide-grid p { font-size:13px;line-height:1.6;margin:0;color:var(--muted); }
+.welcome-guide-actions { display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:24px; }
+.welcome-guide-actions .primary-button { text-decoration:none; }
+@media(max-width:600px) { .welcome-page { padding:16px; }.welcome-intro { margin-top:10vh; }.welcome-logo svg { width:65px;height:65px; }.role-options { gap:12px;margin-top:24px; }.role-card { min-height:220px;border-radius:22px; }.role-title { font-size:25px; }.role-caption { font-size:11px; }.welcome-guide-grid { grid-template-columns:1fr;gap:10px; }.welcome-guide-grid article { padding:14px; }.welcome-guide-actions { flex-wrap:wrap;justify-content:center; } }
+@media(max-height:600px) and (min-width:601px) { .welcome-intro { margin-top:12px; }.welcome-logo { display:none; }.welcome-intro h1 { font-size:60px; }.welcome-start { margin-top:15px; }.role-screen { margin-top:10px; }.role-options { margin-top:15px; }.role-card { min-height:180px; }.welcome-guide-grid article { padding:12px; } }
+@media(prefers-reduced-motion:reduce) { .welcome-start svg { animation:none; }.role-card,.wrap-snake,.wrap-snake path,.hover-apple,.role-title { transition:none; } }
+
+.board-stage:has(canvas[data-biting="true"]) .state-overlay:not(.pause-overlay) { opacity:0;pointer-events:none; }
+
+.play-settings-panel summary { padding:10px 0;cursor:pointer;font-size:12px;font-weight:600; }
+.welcome-tip-tabs { display:none; }
+@media (max-width:600px), (max-height:600px) {
+  .welcome-tip-tabs { display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:16px 0 10px; }
+  .welcome-tip-tabs button { min-height:44px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--forest);font-size:12px; }
+  .welcome-tip-tabs button[aria-pressed="true"] { background:var(--rush);color:var(--paper); }
+  .welcome-guide-grid { display:block;margin:10px 0 16px; }
+  .welcome-guide-grid article { display:none;min-height:165px; }
+  .welcome-guide-grid article[data-active="true"] { display:block; }
+}
+@media (max-height:600px) {
+  .welcome-page { padding:12px 16px; }
+  .welcome-guide { margin-top:8px; }
+  .welcome-guide h1 { font-size:28px;margin:8px 0; }
+  .welcome-guide h1 br { display:none; }
+  .welcome-guide .welcome-kicker { margin:4px 0; }
+  .welcome-tip-tabs { margin:8px 0; }
+  .welcome-guide-grid article { min-height:125px;padding:10px; }
+  .welcome-guide-grid p { font-size:12px;line-height:1.5; }
+  .welcome-guide-grid h2 { font-size:16px;margin:4px 0; }
+  .welcome-guide-actions { margin-bottom:0; }
+}

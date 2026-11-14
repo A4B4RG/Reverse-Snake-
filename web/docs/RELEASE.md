@@ -1,5 +1,20 @@
 # Release evidence
 
+## Jungle release 1.5.0 — 14 November 2026
+
+Food hunters now grow with active time, shorten only after close misses/collisions, stun in place with golden halos/stars and resume from their tails. From 60 seconds and a body of at least 18 cells, Food Levels/Survival split into two non-overlapping hunters. A simultaneous collision preserves both complete bodies and makes both tails lead afterward. Hunter stays one controlled snake, gains timed growth, inverted-color electricity during speed boost, halo/stars around stunned food and random round-start item positions. Hard Hunter walls sink and emerge elsewhere after 45 seconds, then every 30 seconds. All captures have a brief bite animation.
+
+Thirty connected maps retain rising score targets, immediate unlocks and continuing chases with cumulative stars. Easy is the fresh difficulty. Welcome → Start → Hunter/Food → selected-role instructions leads into `/hunter` or `/food`. Desktop role artwork responds to hover/focus; compact guides use selectable tips. Menu settings provide 30 FPS by default, universal 60, supported mobile 90, desktop up to 120, touch sensitivity and an original piano/violin/viola/cello jungle loop with music/volume controls. Swipes steer and jitter-tolerant double-taps dash; no arrow pad or Dash button is introduced.
+
+Version **1.5.0 / jungle-6** retains prior orchard-5/orchard-4/orchard-3/canopy-2 recording engines and old score/progress data. Root PROJECT_STATUS.md is preserved with a current-scenario note; README, mode, technical, asset, visual, limitation and verification reports describe this release. Browser dependencies remain unchanged.
+
+Local checks: **80 rules tests**, **77 Chromium browser passes**, the existing headless tab-visibility skip, production build, lint, types and **zero audit findings**. VERIFICATION.md explains the new coverage, retained-engine comparison, visual inspection and physical-device limits. The [main verification workflow](https://github.com/A4B4RG/Reverse-Snake-/actions/workflows/verify.yml?query=branch%3Amain) identifies exact pushed commits and their clean-install/Linux results.
+
+Repository: [A4B4RG/Reverse-Snake-](https://github.com/A4B4RG/Reverse-Snake-), branch **main** / **origin/main**. Pre-update rollback checkpoint: `9212c6387077628d771c83205ddc7beef33408c4`. Source, assets, tests, reports and captures are delivered through the existing GitHub integration. Rollback uses a reviewed revert on main and the existing deployment history; it does not restore cleared local saves.
+
+Hosted Vercel Preview/production gameplay remains **NOT VERIFIED** under the explicit instruction **“Push main; document hosted verification gap.”** A source push or passing CI does not establish the deployed version at https://reverse-snake-chi.vercel.app. Physical-device refresh/gesture/audio behavior and external balance feedback remain pending.
+
+The sections below preserve earlier release evidence.
 ## Continuous chase release 1.4.0 — 14 November 2026
 
 Reaching a Levels score target now saves the next-map unlock while the chase keeps running and scoring. The score bar marks cumulative stars at target +100, +300 and strictly above +700. Best ratings persist across later captures and lower scores. Next map explicitly records the current chase before selecting the next map; Pause offers End chase. The progress control keeps a stable height when it becomes available. Fullscreen entry/exit restores Canvas focus and preserves keyboard/swipe control in both player roles while genuine tab suspension still pauses.

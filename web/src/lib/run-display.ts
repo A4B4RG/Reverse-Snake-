@@ -1,6 +1,7 @@
 import { createGame, type GameState } from "./game";
 import { isHunter, type RunState } from "./replay";
 import * as orchard4Game from "./legacy/orchard4/game";
+import * as orchard5Game from "./legacy/orchard5/game";
 import * as orchardGame from "./legacy/orchard3/game";
 import * as originalGame from "./legacy/game";
 
@@ -24,9 +25,12 @@ export function displayRun(s: RunState, ruleset?: string): GameState {
         displayPowerUps: s.powerUps,
         displaySpeedRemaining: s.speedRemaining,
         displayStunRemaining: s.stunRemaining,
+        displayObstacles: s.walls,
+        displayWallAnimation: s.wallAnimation,
+        bite: s.bite,
         score: s.score,
         elapsed: s.elapsed,
       }
     : { ...s, board, appearance };
-  return ruleset === "orchard-4" ? { ...display, displayObstacles: orchard4Game.obstaclesFor(s.arena, board) } : ruleset === "orchard-3" ? { ...display, displayObstacles: orchardGame.obstaclesFor(s.arena, board) } : ruleset === "canopy-2" ? { ...display, displayObstacles: originalGame.ARENAS[s.arena].obstacles } : display;
+  return ruleset === "orchard-5" ? { ...display, displayObstacles: orchard5Game.obstaclesFor(s.arena, board) } : ruleset === "orchard-4" ? { ...display, displayObstacles: orchard4Game.obstaclesFor(s.arena, board) } : ruleset === "orchard-3" ? { ...display, displayObstacles: orchardGame.obstaclesFor(s.arena, board) } : ruleset === "canopy-2" ? { ...display, displayObstacles: originalGame.ARENAS[s.arena].obstacles } : display;
 }

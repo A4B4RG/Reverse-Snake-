@@ -12,6 +12,7 @@ import {
 } from "@/lib/replay";
 import { displayRun } from "@/lib/run-display";
 import { useTheme } from "@/lib/theme";
+import { effectiveFrameRate, isMobileDevice, readSettings, touchThreshold } from "@/lib/settings";
 
 export function GameCanvas({
   gameRef,
@@ -30,16 +31,16 @@ export function GameCanvas({
   onResize?: (b: Board) => void;
   ariaLabel?: string;
   onSwipe?: (d: Direction) => void;
-  onDash?: () => void;
+  onDash?: (direction?: Direction) => void;
 }) {
-  const gesture = useRef<{ id: number; x: number; y: number; moved: boolean } | null>(null);
-  const lastTap = useRef<number | null>(null);
+  const gesture = useRef<{ id: number; x: number; y: number; moved: boolean; started: number } | null>(null);
+  const lastTap = useRef<{ time: number; x: number; y: number } | null>(null);
   const lastSwipe = useRef<Direction | null>(null);
   const lastElapsed = useRef(0);
   const moveGesture = (event: PointerEvent<HTMLCanvasElement>) => {
     const g = gesture.current;
     if (!g || g.id !== event.pointerId || g.moved || gameRef.current.phase !== "running") return;
-    const d = swipeDirection(event.clientX - g.x, event.clientY - g.y);
+    const d = swipeDirection(event.clientX - g.x, event.clientY - g.y, touchThreshold(readSettings().sensitivity));
     if (d) { g.moved = true; lastTap.current = null; lastSwipe.current = d; onSwipe?.(d); }
   };
   const theme = useTheme(),
@@ -64,7 +65,13 @@ export function GameCanvas({
       lastState: GameState | null = null,
       lastGhost: GameState | null = null,
       lastTheme = "",
-      lastReduced = false;
+      lastReduced = false,
+      lastDraw = -Infinity,
+      biteStarted = 0,
+      previousBite = 0;
+    let lastBiteRemaining = 0;
+    let displayHz = 60, lastFrame = 0;
+    const frameSamples: number[] = [];
     let pauseCursor: ReplayCursor | null = null,
       source: Replay | null = null,
       paused = false,
@@ -80,6 +87,11 @@ export function GameCanvas({
     observer.observe(canvas);
     measure();
     const draw = (now: number) => {
+      if (lastFrame && frameSamples.length < 40 && now - lastFrame > 0 && now - lastFrame < 100) {
+        frameSamples.push(now - lastFrame);
+        if (frameSamples.length === 40) displayHz = 1000 / [...frameSamples].sort((a,b) => a-b)[20];
+      }
+      lastFrame = now;
       const live = gameRef.current,
         dpr = Math.min(window.devicePixelRatio || 1, 2),
         theme = themeRef.current;
@@ -112,7 +124,15 @@ export function GameCanvas({
         canvas.height = Math.round(height * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
+      if (game.bite && (previousBite === 0 || game.bite.remaining > previousBite)) biteStarted = now;
+      previousBite = game.bite?.remaining ?? 0;
+      const biteRemaining = ["lost", "won"].includes(game.phase) && game.bite ? Math.max(0,600-(now-biteStarted)) : game.bite?.remaining ?? 0;
+      canvas.dataset.biting = String(!reduced.matches && biteRemaining > 0);
+      const effects = (game.snakeStun ?? 0) > 0 || (game.rival?.stun ?? 0) > 0 || Boolean(game.displaySpeedRemaining || game.displayStunRemaining || game.displayWallAnimation || biteRemaining);
       const visualChanged =
+        effects ||
+        (lastBiteRemaining > 0 && biteRemaining === 0) ||
+        game.rival !== lastState?.rival ||
         !lastState ||
         game.displayPowerUps !== lastState.displayPowerUps ||
         Boolean(game.displaySpeedRemaining) !== Boolean(lastState.displaySpeedRemaining) ||
@@ -127,13 +147,14 @@ export function GameCanvas({
         game.closeCallFlash !== lastState.closeCallFlash ||
         Boolean(game.boostRemaining) !== Boolean(lastState.boostRemaining) ||
         game.boostTrail !== lastState.boostTrail;
-      if (
+      const fps = effectiveFrameRate(readSettings().fps, isMobileDevice(), displayHz);
+      if ((now - lastDraw >= 1000 / fps - 0.5 || resized || !lastState || game.phase !== lastState.phase) && (
         resized ||
         visualChanged ||
         ghost !== lastGhost ||
         theme !== lastTheme ||
         reduced.matches !== lastReduced
-      ) {
+      )) {
         renderGame(
           ctx,
           game,
@@ -142,6 +163,8 @@ export function GameCanvas({
           theme,
           { width, height },
           ghost?.appearance?.fruit,
+          reduced.matches || game.phase === "paused" ? game.elapsed : now,
+          biteRemaining,
         );
         canvas.dataset.theme = theme;
         canvas.dataset.columns = String(live.board.columns);
@@ -157,6 +180,9 @@ export function GameCanvas({
         lastWidth = width;
         lastHeight = height;
         lastDpr = dpr;
+        const period = 1000 / fps;
+        lastDraw = Number.isFinite(lastDraw) && !resized ? now - (now - lastDraw) % period : now;
+        lastBiteRemaining = biteRemaining;
       }
       canvas.dataset.elapsed = String(live.elapsed);
       canvas.dataset.previewElapsed = pauseCursor ? String(game.elapsed) : "";
@@ -183,17 +209,20 @@ export function GameCanvas({
         if (!onSwipe || gameRef.current.phase !== "running" || gesture.current || !["touch", "pen"].includes(event.pointerType)) return;
         event.preventDefault();
         event.currentTarget.setPointerCapture(event.pointerId);
-        gesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
+        gesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false, started: Date.now() };
       }}
       onPointerMove={moveGesture}
       onPointerUp={event => {
         const g = gesture.current;
         if (!g || g.id !== event.pointerId) return;
         moveGesture(event);
-        if (!g.moved && gameRef.current.phase === "running" && Math.hypot(event.clientX - g.x, event.clientY - g.y) < 12) {
+        if (!g.moved && gameRef.current.phase === "running" && Date.now() - g.started < 350 && Math.hypot(event.clientX - g.x, event.clientY - g.y) < touchThreshold(readSettings().sensitivity) + 12) {
           const now = Date.now();
-          if (lastTap.current !== null && now - lastTap.current < 300) { if (lastSwipe.current) onDash?.(); lastTap.current = null; }
-          else lastTap.current = now;
+          if (lastTap.current && now - lastTap.current.time < 360 && Math.hypot(g.x - lastTap.current.x, g.y - lastTap.current.y) < 60) {
+            const direction = lastSwipe.current ?? (gameRef.current.lastPlayerMove >= 0 ? gameRef.current.playerDirection : null);
+            if (direction) onDash?.(direction);
+            lastTap.current = null;
+          } else lastTap.current = { time: now, x: g.x, y: g.y };
         }
         gesture.current = null;
       }}

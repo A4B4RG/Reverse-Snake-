@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { unlockMusic } from "@/lib/music";
 import {
   Expand,
   Pause,
@@ -55,7 +56,7 @@ import { GameMenu } from "./game-menu";
 export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
   const initial: RunMeta =
     mode === "hunter"
-      ? { mode, arena: 0, difficulty: "normal", seed: 1, hunterMode: "levels" }
+      ? { mode, arena: 0, difficulty: "easy", seed: 1, hunterMode: "levels" }
       : {
           mode,
           arena: CHALLENGES[0].arena,
@@ -149,6 +150,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
     publish({ ...createRun(metaRef.current), phase: "ready" });
   }, [publish]);
   const start = useCallback(() => {
+    unlockMusic();
     loadPreferences();
     input.current.clear();
     saveLearning(stateRef.current.learning);
@@ -158,10 +160,16 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
       appearance: stateRef.current.appearance,
       learning: stateRef.current.learning,
     };
+    if (mode === "hunter") {
+      let seed = Math.floor(Math.random() * 0x100000000) >>> 0;
+      try { const values = new Uint32Array(1); crypto.getRandomValues(values); seed = values[0]; } catch {}
+      metaRef.current = { ...metaRef.current, seed };
+      setMeta(metaRef.current);
+    }
     recorder.current = new Recorder(metaRef.current);
     publish(createRun(metaRef.current));
     focus();
-  }, [publish, focus, loadPreferences]);
+  }, [publish, focus, loadPreferences, mode]);
   const pause = useCallback(() => {
     if (stateRef.current.phase === "running") {
       input.current.clear();
@@ -389,7 +397,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
           </span>
         </Link>
         <nav className="mode-nav" aria-label="Game navigation">
-          <Link href="/">Fruit</Link>
+          <Link href="/food">Food</Link>
           <Link href={mode === "hunter" ? "/challenge" : "/hunter"}>
             {mode === "hunter" ? "Challenges" : "Hunter"}
           </Link>
@@ -683,8 +691,8 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
         >
           <p className="modal-intro">
             {mode === "hunter"
-              ? "Use arrow keys, WASD or swipes to turn your snake. It keeps moving. Queue up to two corners; reversals are rejected. Eat fruit for one extra cell and 100 points × difficulty. Avoid walls, stones and your body. The departing tail cell is safe unless growing. Levels unlocks maps at their score targets without ending the hunt; earn stars at +100, +300 and above +700. Survival has all maps. Lightning gives 2× speed for 10 seconds; snowflakes freeze food for 5 seconds. Filling the board wins."
-              : `Survive ${challenge?.target ? challenge.target / 1000 : 0} seconds in ${ARENAS[meta.arena].name}. Arrow keys / WASD move your fruit; swipe up, down, left or right to keep moving in that direction. Space or a double-tap after a swipe moves three cells in your last direction. Capture loses. Snake crashes respawn a hunter. Close calls give a five-second speed boost. This local course has the same course and seed on every attempt.`}
+              ? "Use arrow keys, WASD or swipes to turn your snake. It keeps moving. Queue up to two corners; reversals are rejected. Eat fruit for one extra cell and 100 points × difficulty. Avoid walls, stones and your body. The departing tail cell is safe unless growing. Levels unlocks maps at their score targets without ending the hunt; earn stars at +100, +300 and above +700. Survival has all maps. Lightning gives 2× speed for 10 seconds; snowflakes freeze food for 5 seconds. Your snake also grows with time. On Hard, walls sink and relocate after 45 seconds, then every 30 seconds. Filling the board wins."
+              : `Survive ${challenge?.target ? challenge.target / 1000 : 0} seconds in ${ARENAS[meta.arena].name}. Arrow keys / WASD move your fruit; swipe up, down, left or right to keep moving in that direction. Space or a double-tap after a swipe moves three cells in your last direction. Capture loses. Snake collisions stun the hunter before its tail takes the lead. Close calls give a five-second speed boost. This local course has the same course and seed on every attempt.`}
           </p>
           <p className="modal-intro">
             Esc pauses · Enter starts/resumes · R restarts. Your round pauses

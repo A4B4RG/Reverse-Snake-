@@ -1,9 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { fruit, swipe } from "./helpers";
 test("mobile steering comes from swipes, double-tap dashes the last direction, and pause clears motion", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("reverse-snake:settings:v1", JSON.stringify({ fps: 60 })));
   await page.setViewportSize({ width: 390, height: 844 });
   await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
-  await page.goto("/");
+  await page.goto("/food");
   await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   await page.clock.pauseAt(new Date("2026-11-14T00:00:01Z"));
   await expect(page.getByRole("button", { name: /^Move / })).toHaveCount(0);
@@ -42,9 +43,9 @@ test("mobile steering comes from swipes, double-tap dashes the last direction, a
   await page.clock.runFor(300); expect(await fruit(page)).toEqual(stopped);
 });
 
-test("all ten maps can be played in Survival and the complex map expands in fullscreen", async ({ page }) => {
+test("all thirty maps can be played in Survival and the complex map expands in fullscreen", async ({ page }) => {
   const { ARENAS } = await import("../src/lib/game");
-  await page.goto("/");
+  await page.goto("/food");
   await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   await page.getByRole("button", { name: "Survival", exact: true }).click();
   for (const arena of ARENAS) {
@@ -59,13 +60,14 @@ test("all ten maps can be played in Survival and the complex map expands in full
 
 test("real safe movement unlocks the next map without stopping the chase", async ({ page }) => {
   await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
-  await page.goto("/"); await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
+  await page.goto("/food"); await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   await page.clock.pauseAt(new Date("2026-11-14T00:00:01Z"));
   await expect(page.getByRole("button", { name: "Next arena", exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "Let’s play" }).dispatchEvent("click"); await page.clock.runFor(40);
   const p = await fruit(page), b = await page.locator("canvas").evaluate(c => ({ columns: Number(c.dataset.columns), rows: Number(c.dataset.rows) }));
-  const route = [["Left", p.x], ["Up", p.y], ["Right", b.columns - 1], ["Down", b.rows - 1], ["Left", b.columns - 1], ["Up", b.rows - 1]] as const;
-  let remaining = 102;
+  const perimeter = [["Right", b.columns - 1], ["Down", b.rows - 1], ["Left", b.columns - 1], ["Up", b.rows - 1]] as const;
+  const route = [["Left", p.x], ["Up", p.y], ...Array.from({ length: 3 }, () => perimeter).flat()] as const;
+  let remaining = 152;
   for (const [d, cells] of route) {
     const count = Math.min(remaining, cells);
     await page.keyboard.down(`Arrow${d}`); await page.clock.runFor(count * 100); await page.keyboard.up(`Arrow${d}`);
@@ -85,7 +87,7 @@ test("real safe movement unlocks the next map without stopping the chase", async
 
 test("continuing an Easy chase earns a visible star and saves the rating", async ({ page }) => {
   await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
-  await page.goto("/"); await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
+  await page.goto("/food"); await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   await page.clock.pauseAt(new Date("2026-11-14T00:00:01Z"));
   await page.getByRole("button", { name: "Easy", exact: true }).dispatchEvent("click");
   await page.getByRole("button", { name: "Let’s play" }).dispatchEvent("click"); await page.clock.runFor(40);

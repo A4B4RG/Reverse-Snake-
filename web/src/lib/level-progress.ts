@@ -1,15 +1,16 @@
+import { ARENAS } from "./game";
 export type StarCount = 0 | 1 | 2 | 3;
 export type LevelProgress = { unlocked: number; stars: number[] };
 export const starTargets = (target: number) => [target + 100, target + 300, target + 701] as const;
 export function starsFor(score: number, target: number): StarCount {
   return Math.floor(score) > target + 700 ? 3 : score >= target + 300 ? 2 : score >= target + 100 ? 1 : 0;
 }
-export const emptyProgress = (): LevelProgress => ({ unlocked: 0, stars: Array(10).fill(0) });
+export const emptyProgress = (): LevelProgress => ({ unlocked: 0, stars: Array(ARENAS.length).fill(0) });
 export function parseProgress(value: unknown): LevelProgress {
   const data = value as Partial<LevelProgress> | null;
   return {
-    unlocked: Number.isInteger(data?.unlocked) && data!.unlocked! >= 0 && data!.unlocked! < 10 ? data!.unlocked! : 0,
-    stars: Array.from({ length: 10 }, (_, i) => {
+    unlocked: Number.isInteger(data?.unlocked) && data!.unlocked! >= 0 && data!.unlocked! < ARENAS.length ? data!.unlocked! : 0,
+    stars: Array.from({ length: ARENAS.length }, (_, i) => {
       const star = data?.stars?.[i];
       return Number.isInteger(star) && star! >= 0 && star! <= 3 ? star! : 0;
     }),
@@ -17,7 +18,7 @@ export function parseProgress(value: unknown): LevelProgress {
 }
 export function earnProgress<T extends LevelProgress>(data: T, arena: number, score: number, target: number, qualified: boolean): T {
   if (!qualified || score < target || arena > data.unlocked) return data;
-  const unlocked = Math.max(data.unlocked, Math.min(9, arena + 1));
+  const unlocked = Math.max(data.unlocked, Math.min(ARENAS.length - 1, arena + 1));
   const stars = starsFor(score, target);
   if (unlocked === data.unlocked && stars <= (data.stars[arena] ?? 0)) return data;
   const nextStars = [...data.stars];

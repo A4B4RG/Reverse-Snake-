@@ -113,7 +113,7 @@ test("mango recording replays real ordered dash and pause input without a mismat
   page,
 }) => {
   await page.clock.install({ time: new Date("2026-11-14T00:00:00Z") });
-  await page.goto("/");
+  await page.goto("/food");
   await page.clock.pauseAt(new Date("2026-11-14T00:00:01Z"));
   await page.getByRole("button", { name: "Let’s play" }).dispatchEvent("click");
   await page.clock.runFor(40);

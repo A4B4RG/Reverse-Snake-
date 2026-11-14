@@ -46,7 +46,7 @@ test("every arena and difficulty catches idle food in both modes without an auto
   }
 });
 
-test("a committed crash respawns a hunter without skipping the score gate", () => {
+test("a committed crash stuns a hunter without skipping the score gate", () => {
   const wall = moveSnake(running({ snake: [{ x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }], snakeDirection: "left", committedMoves: 1 }));
   assert.equal(wall.phase, "running"); assert.equal(wall.reason, null); assert.equal(wall.escapes, 1); assert.equal(wall.score, 0);
   const hedge = moveSnake(running({ arena: 1, snake: [{ x: 6, y: 6 }, { x: 5, y: 6 }, { x: 4, y: 6 }], snakeDirection: "right", committedMoves: 1 }));
@@ -55,7 +55,7 @@ test("a committed crash respawns a hunter without skipping the score gate", () =
   assert.equal(body.phase, "running"); assert.equal(body.escapes, 1);
 });
 
-test("a real mid-lunge dodge baits a respawn while the level remains active", () => {
+test("a real mid-lunge dodge baits a stun while the level remains active", () => {
   let game = running({ player: { x: 0, y: 3 } });
   let dodged = false;
   for (let i = 0; i < 1000 && game.phase === "running" && !game.escapes; i++) {

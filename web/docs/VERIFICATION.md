@@ -1,5 +1,20 @@
 # Verification
 
+## Jungle release 1.5.0 — 14 November 2026
+
+Version **1.5.0 / jungle-6** passes **80 rules tests**, production build, ESLint, TypeScript and the full dependency audit with **zero vulnerabilities**. Dependency versions are unchanged; the lockfile changes only its two root version fields. The new audio generator uses optional Python authoring dependencies, outside the browser package.
+
+The final full local Playwright Chromium production suite passes **77 browser tests**, with the existing explicit headless tab-visibility skip. The separate blur-event pause check passes. New browser coverage checks the welcome/role/instruction flow, desktop hover artwork, phone/short-screen guides within the viewport, Easy defaults, frame/settings persistence, desktop 120, mobile 90 gating, actual Canvas draw cadence with unchanged simulation time, touch sensitivity, all four Survival swipes and jitter-tolerant double-tap dash at 30 FPS. The positive mobile 90 capability case supplies an emulated high-refresh animation signal; it does not certify physical hardware. Native Start loads and plays the original local MP3; music toggling and volume control pass.
+
+Real seeded Hunter speed/Stun pickups render skin-inverted electricity and golden halo/star art. Pause/resume retains the seeded pickup state. Food Levels/Survival show moving bite artwork, then release the result controls after the animation; a real Hunter catch completes its bite while play continues. Terminal bite aging covers both lost and won outcomes. Existing fullscreen entry/exit, Wild Heart pursuit, score-gated progression/stars, saved skins, learning/replays, ghost opacity, pause previews, themes/contrast, lifecycle and twelve single-viewport checks remain passing.
+
+Rules coverage includes active-time growth and shrinking only after misses/collisions; in-place freeze and tail reversal; legal two-body splitting and resize; converging heads, swaps and simultaneous traps; double-collision retention and both tails becoming heads; and collisions with either body. Actual two-minute Food chases grow, split, remain disjoint and replay exactly. A real one-minute Hunter Hard chase relocates walls and replays exactly without a second snake. Wall timing, safe activation, connected floor, deterministic/varied powers and all thirty map layouts pass. A real orchard-5 ending recording and ten-map save migration remain valid. The four retained orchard-5 source snapshots match the prior main files exactly after import relocation.
+
+Current desktop/phone, light/dark, fullscreen, welcome/guide, electricity, stun and bite screenshots were visually inspected. Physical phones, Safari/Firefox, subjective music/player balance and genuine headed tab visibility remain unverified. Selected FPS caps drawing; it does not interpolate cell movement or certify a hardware refresh rate.
+
+The [GitHub main workflow](https://github.com/A4B4RG/Reverse-Snake-/actions/workflows/verify.yml?query=branch%3Amain) runs clean installation, audit, rules, lint, build, types and the full Chromium suite against each exact pushed revision. Hosted Vercel Preview/production gameplay remains **NOT VERIFIED** under the existing user waiver. GitHub delivery/CI does not establish the build currently served by Vercel.
+
+The sections below preserve earlier verification evidence.
 ## Continuous chases, stars and Hunter upgrades — 14 November 2026
 
 Version **1.4.0 / orchard-5** passes **67 rules tests**, production build, ESLint, TypeScript and full dependency audit with **zero vulnerabilities**. Dependency versions are unchanged; only the two root version fields change in the lockfile.

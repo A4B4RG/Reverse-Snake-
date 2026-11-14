@@ -5,10 +5,11 @@ import { mkdir } from "node:fs/promises";
 async function openGame(page: Page) {
   await page.addInitScript(() => localStorage.setItem("reverse-snake:theme:v1", "dark"));
   await page.clock.install({ time: new Date("2026-11-11T12:00:00Z") });
-  await page.goto("/");
+  await page.goto("/food");
   await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   await page.clock.pauseAt(new Date("2026-11-11T12:00:01Z"));
   await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "ready");
+  await page.getByRole("button", { name: "Normal", exact: true }).dispatchEvent("click");
 }
 
 async function start(page: Page) {
@@ -21,7 +22,7 @@ async function start(page: Page) {
 test("starting before the first animation frame cannot reset the round", async ({page}) => {
   const time = new Date("2026-11-14T00:00:00Z");
   await page.clock.install({time}); await page.clock.pauseAt(time);
-  await page.goto("/");
+  await page.goto("/food");
   await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");
   await page.getByRole("button", {name: "Let’s play"}).dispatchEvent("click");
   await page.clock.runFor(100);

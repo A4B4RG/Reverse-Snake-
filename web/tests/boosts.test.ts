@@ -98,14 +98,14 @@ test("survival keeps the hunter's length beyond a level's hunger deadline", () =
   assert.equal(game.phase, "running"); assert.equal(game.snake.length, ARENAS[0].length);
 });
 
-test("every survival respawn is connected, clear of fruit/obstacles, and carries the active boost", () => {
-  ARENAS.forEach((arena, index) => {
-    for (const player of [{ x: 0, y: 0 }, { x: 0, y: 19 }, { x: 19, y: 1 }, { x: 5, y: 13 }]) {
-      const game = finish(running({ arena: index, mode: "survival", player, boostRemaining: 1234 }), "won", "wall");
-      assert.equal(game.phase, "running"); assert.equal(game.escapes, 1); assert.equal(game.reason, null);
-      assert.equal(game.boostRemaining, 1234); assert.equal(game.snake.length, arena.length);
-      assert(!game.snake.some(p => equal(p, player) || arena.obstacles.some(o => equal(o, p))));
-      game.snake.slice(1).forEach((p, i) => assert.equal(Math.abs(p.x - game.snake[i].x) + Math.abs(p.y - game.snake[i].y), 1));
-    }
+test("survival collisions stun in place, trim only the tail, and retain active boosts", () => {
+  ARENAS.forEach((arena,index) => {
+    const before = { ...createGame(index,"normal","survival"), phase: "running" as const, boostRemaining: 1234 };
+    const game = finish(before,"won","wall");
+    assert.equal(game.phase,"running");assert.equal(game.escapes,1);assert.equal(game.reason,null);
+    assert.equal(game.boostRemaining,1234);assert.equal(game.snake.length,Math.max(4,before.snake.length-2));
+    assert.deepEqual(game.snake[0],before.snake[0]);assert.deepEqual(game.snake,before.snake.slice(0,game.snake.length));
+    assert.equal(game.snakeStun,1600);
+    game.snake.slice(1).forEach((p,i)=>assert.equal(Math.abs(p.x-game.snake[i].x)+Math.abs(p.y-game.snake[i].y),1));
   });
 });
