@@ -41,6 +41,7 @@ import { GameInput, keyboardSource, movementDirection } from "@/lib/input";
 import { SnakeMark } from "./pixel-art";
 import { GameCanvas } from "./game-canvas";
 import { Modal } from "./modal";
+import { GameMenu } from "./game-menu";
 
 export function displayRun(s: RunState): GameState {
   return isHunter(s)
@@ -209,7 +210,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
       frame = requestAnimationFrame(animate);
     };
     const down = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (document.querySelector(".menu-panel") || e.ctrlKey || e.metaKey || e.altKey) return;
       if ((e.target as HTMLElement).closest("dialog")) return;
       if (e.key === "Escape") {
         e.preventDefault();
@@ -296,6 +297,7 @@ export default function NewGame({ mode }: { mode: "hunter" | "challenge" }) {
           </Link>
           <Link href="/replays">Replays</Link>
         </nav>
+        <GameMenu onOpen={pause}><button data-menu-close onClick={() => { pause(); setHelp(true); }}>How to play</button></GameMenu>
       </header>
       <main className="site-main">
         <section className="hero">

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { ArrowDown, ArrowDownLeft, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, AudioLines, Check, ChevronLeft, ChevronRight, CornerDownLeft, Expand, Heart, MoveUpRight, Pause, Play, RotateCcw, Route, Shrink, Sprout, Trophy, VolumeX, X, Zap } from "lucide-react";
 import { ARENAS, CLOSE_CALL_DURATION, DASH_COOLDOWN, DIFFICULTIES, formatTime, type Difficulty, type Direction } from "@/lib/game";
 import { GameInput, keyboardSource, movementDirection } from "@/lib/input";
@@ -9,8 +8,9 @@ import { useGame } from "@/hooks/use-game";
 import { GameCanvas } from "./game-canvas";
 import { GardenMap, JungleFruit, SnakeMark } from "./pixel-art";
 import { Modal } from "./modal";
+import { GameMenu } from "./game-menu";
 
-type Dialog = "guide" | "scores" | "about" | "menu" | null;
+type Dialog = "guide" | "scores" | "about" | null;
 
 export default function ReverseSnake() {
   const [ghostEnabled, setGhostEnabled] = useState(false);
@@ -43,7 +43,7 @@ export default function ReverseSnake() {
 
   useEffect(() => {
     const keyDown = (event: KeyboardEvent) => {
-      if (dialog || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (dialog || document.querySelector(".menu-panel") || event.ctrlKey || event.metaKey || event.altKey) return;
       const target = event.target as HTMLElement;
       const interactive = target.closest("button, input, select, textarea, a, dialog, [contenteditable='true']");
       if (event.key === "Escape" && gameRef.current.phase === "running") { event.preventDefault(); input.current.clear(); pause(); return; }
@@ -109,7 +109,13 @@ export default function ReverseSnake() {
         <button onClick={() => openDialog("guide")}>How to play <ArrowUpRight size={14} /></button>
         <button onClick={() => openDialog("scores")}>Your best runs <ArrowUpRight size={14} /></button>
       </nav>
-      <button className="menu-button" onClick={() => openDialog("menu")} aria-label="Open game menu">Menu</button>
+      <GameMenu onOpen={pause}>
+        <button data-menu-close onClick={() => openDialog("guide")}>How to play</button>
+        <button data-menu-close onClick={() => openDialog("scores")}>Your best runs</button>
+        <button data-menu-close onClick={() => openDialog("about")}>About Reverse Snake</button>
+        <label className="ghost-option"><input type="checkbox" checked={ghostEnabled} disabled={active} onChange={event => setGhostEnabled(event.target.checked)} />Show the last matching mango ghost next round</label>
+        <p className="score-note">Completed rounds save up to three replays locally. A ghost appears when a saved replay matches your setup.</p>
+      </GameMenu>
       <button className={`sound-button ${!data.sound ? "muted" : ""}`} onClick={toggleSound} aria-label={data.sound ? "Mute sound" : "Enable sound"} aria-pressed={data.sound}>{data.sound ? <AudioLines size={17} /> : <VolumeX size={17} />}<span>Sound {data.sound ? "on" : "off"}</span></button>
     </header>
 
@@ -170,7 +176,6 @@ export default function ReverseSnake() {
       {!storageAvailable && <p className="storage-notice" role="status">Browser storage is unavailable. Scores will last for this visit only.</p>}
     </main>
 
-    {dialog === "menu" && <Modal title="Explore the canopy." onClose={() => setDialog(null)}><div className="game-menu"><Link href="/hunter">Hunter · control the snake</Link><Link href="/challenge">Local Challenges</Link><Link href="/replays">Watch saved replays</Link><button onClick={() => setDialog("guide")}>How to play</button><button onClick={() => setDialog("scores")}>Your best runs</button><button onClick={() => setDialog("about")}>About Reverse Snake</button><label className="ghost-option"><input type="checkbox" checked={ghostEnabled} disabled={active} onChange={event=>setGhostEnabled(event.target.checked)} />Show the last matching mango ghost next round</label><p className="score-note">Completed rounds save up to three replays locally. A ghost appears when a saved replay matches your setup.</p></div></Modal>}
     <div className="sr-only" role="status" aria-live="polite">{game.closeCalls > 0 ? `Close call ${game.closeCalls}. Double speed for ${CLOSE_CALL_DURATION[game.mode] / 1000} seconds.` : ""}</div>
     <div className="sr-only" role="status" aria-live="polite">{game.phase === "won" ? `You won with ${Math.floor(game.score)} points. ${outcomeText}` : game.phase === "lost" ? `The snake caught you. You scored ${Math.floor(game.score)} points. Try again.` : game.phase === "paused" ? "Game paused." : game.phase === "running" ? "Game started. Hold arrow keys or WASD to move." : "Ready to play."}</div>
 

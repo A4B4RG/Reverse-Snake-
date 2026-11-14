@@ -1,5 +1,13 @@
 # Release evidence
 
+## Theme and hover-menu update — 14 November 2026
+
+The current source adds default light and saved original dark palettes, a shared Theme menu across all modes/replay, mouse hover opening and touch/click toggling. The update is based on main cb933bf005fc0b8e4e8c4d53f10fd307e260ab11. Local verification passes 44 rules tests, lint, production build, TypeScript and 43 browser tests, with one existing headless tab-visibility skip. Updated visual captures and current product/verification reports accompany the source.
+
+Main delivery remains authorized by the user's instruction to push all work to GitHub main. Hosted Preview/production verification remains NOT VERIFIED under the existing explicit waiver below; refreshing the site only shows the update after Vercel has successfully deployed the new main commit. A GitHub push does not establish that deployed state.
+
+## Earlier complete-browser release
+
 Candidate release 1.1.0 is prepared on 14 November 2026 on codex/complete-browser-release. Source revision: 57e038f00c2959a3d2af0025c154383f7e01732d, preceded by a746e8b (Wild Heart Levels fix and bytecode untracking). Documentation/CI commits follow without changing the verified gameplay.
 
 Local checks: clean install, 44 rules tests, lint, zero-findings full audit, build, types and 34 browser tests PASS. One real-tab headless check is explicitly skipped; the event wiring test passes. Production Canvas measurement executed and raw results are committed with this report. Screenshots were reviewed at desktop and mobile sizes.

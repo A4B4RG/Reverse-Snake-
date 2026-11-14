@@ -6,6 +6,7 @@ import { readReplays, ReplayCursor, type Replay } from "@/lib/replay";
 import { GameCanvas } from "./game-canvas";
 import { displayRun } from "./new-game";
 import { SnakeMark } from "./pixel-art";
+import { GameMenu } from "./game-menu";
 
 export default function ReplayViewer() {
   const [replays, setReplays] = useState<Replay[]>([]),
@@ -103,6 +104,7 @@ export default function ReplayViewer() {
           <Link href="/hunter">Hunter</Link>
           <Link href="/challenge">Challenges</Link>
         </nav>
+        <GameMenu onOpen={() => { playRef.current = false; setPlaying(false); }} />
       </header>
       <main className="site-main">
         <section className="hero">

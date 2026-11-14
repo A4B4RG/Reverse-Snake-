@@ -1,5 +1,15 @@
 # Verification
 
+## Light/dark themes and hover menu — 14 November 2026
+
+Current local checks pass: **44 rules tests**, ESLint, production build and TypeScript. The full Chrome production-browser suite passes **43 tests**, with the existing explicit headless tab-visibility skip. Dependencies are unchanged.
+
+Theme coverage verifies fresh light default, saved dark and reload across all four routes, invalid/blocked theme storage, live tab synchronization, Canvas redraw with stable paused character positions/time/scores, and readable sampled supporting text and theme selections in both palettes. Menu coverage checks hover open/leave, hover feedback, click pinning, touch tap toggling, Escape/outside close, keyboard focus return and menu-to-guide focus. Gameplay input cannot start/resume behind an open menu. Hunter/Challenge recordings still reach verified replay final states after changing theme during paused playback.
+
+Both themes and their open menus fit Mango, Hunter, Challenges and Replays at 1440 × 900, 320 × 568 and 844 × 390. The existing twelve main-game viewport checks also pass. Desktop and phone theme/menu captures are in screenshots/theme-*.png and have been visually reviewed. The historical dark-art pixel tests explicitly select dark; fresh-default/new-mode/theme checks exercise light.
+
+Hosted production verification remains NOT VERIFIED under the existing user waiver. GitHub delivery and CI evidence are recorded in RELEASE.md; these local checks do not establish the deployed Vercel version.
+
 ## Candidate 1.1.0 — current verification
 
 Final local run on 14 November 2026 with Node 24.19.0 and installed Chrome:

@@ -2,6 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 
 async function openGame(page: Page) {
+  // Keep the original dark artwork and boost-pixel regressions; theme.spec covers light.
+  await page.addInitScript(() => localStorage.setItem("reverse-snake:theme:v1", "dark"));
   await page.clock.install({ time: new Date("2026-11-11T12:00:00Z") });
   await page.goto("/");
   await expect(page.locator("canvas")).toHaveAttribute("data-mounted", "true");

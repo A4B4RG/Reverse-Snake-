@@ -53,6 +53,15 @@ for (const mode of ["hunter", "challenge"] as const) {
     await page
       .getByRole("button", { name: "Play replay" })
       .dispatchEvent("click");
+    await page.clock.runFor(1000);
+    await page.getByRole("button", { name: "Open game menu" }).dispatchEvent("click");
+    const replayTime = await page.locator(".hud-stat > strong").innerText();
+    await page.getByRole("button", { name: "Dark", exact: true }).dispatchEvent("click");
+    await page.clock.runFor(1000);
+    await expect(page.locator("canvas")).toHaveAttribute("data-theme", "dark");
+    expect(await page.locator(".hud-stat > strong").innerText()).toBe(replayTime);
+    await page.getByRole("button", { name: "Close menu" }).dispatchEvent("click");
+    await page.getByRole("button", { name: "Play replay" }).dispatchEvent("click");
     await page.clock.runFor(30_000);
     await expect(page.getByRole("status")).toContainText(
       "Final state verified",

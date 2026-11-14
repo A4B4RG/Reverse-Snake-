@@ -33,7 +33,7 @@ test("repeated controls, modal focus, navigation and offline play retain one gam
     "paused",
   );
   await expect(
-    page.getByRole("button", { name: "Close dialog" }),
+    page.getByRole("button", { name: "Close menu" }),
   ).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);

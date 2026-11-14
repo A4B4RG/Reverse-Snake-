@@ -1,8 +1,10 @@
 # Reverse Snake — browser edition
 
-A playable React / Next.js / Tailwind CSS adaptation of the Python prototype in the parent directory. You control a golden mango under a dark teal jungle canopy. An amber patterned snake hunts you. Bait it into a wall, mossy stone, or its own body—or survive until it runs out of energy in Levels. Survival offers an endless chase.
+A playable React / Next.js / Tailwind CSS adaptation of the Python prototype in the parent directory. You control a golden mango in a jungle canopy. An amber patterned snake hunts you. Bait it into a wall, mossy stone, or its own body—or survive until it runs out of energy in Levels. Survival offers an endless chase.
 
 Version 1.1.0 also includes **Hunter** (control the snake and collect mangoes), three fixed **local Challenges**, completed-run **replays**, and optional matching mango ghosts. Open **Menu** to reach these modes, help, scores, and settings. The core game fits a single viewport on the tested desktop, phone, and landscape sizes. See [current state](docs/CURRENT_STATE.md), [mode contracts](docs/NEW_MODES.md), [limitations](docs/KNOWN_LIMITATIONS.md), and [release evidence](docs/RELEASE.md). Live site: https://reverse-snake-chi.vercel.app.
+
+**Light** is the default theme: pale canopy surfaces with deep teal text. **Menu → Theme → Dark** restores the original dark teal palette. The selection applies to the page, menus, maps and Canvas in all modes, persists locally, and synchronizes between tabs. Hover over Menu with a mouse; click to keep it open or tap to toggle on touchscreens. Escape, the close button, or clicking outside closes it. Opening Menu pauses gameplay and replay; resume explicitly when ready. If theme storage is blocked, switching still works for the current visit.
 
 ## Run locally
 
@@ -69,9 +71,11 @@ Hunter turns with WASD/arrows or touch directions and moves automatically. It ha
 - `src/lib/storage.ts`: defensive, versioned local saves.
 - `src/lib/input.ts`: normalized keys and independent keyboard/pointer ownership.
 - `src/lib/render-game.ts`: jungle canvas art and motion-aware close-call effects.
+- `src/lib/theme.ts`, `src/components/game-menu.tsx`: persistent light/dark palettes and the shared hover/touch menu.
 - `src/lib/audio.ts`: synthesized sound effects; audio starts only after user interaction.
 - `tests/game.test.ts`: regression checks for movement, collision, AI, hunger, pause and saves.
 - `tests/boosts.test.ts`, `tests/input.test.ts`, `tests/compatibility.test.ts`: boost timing, ownership and compatibility regressions.
 - `browser-tests/game.spec.ts`: real input, close-call chases, result handling, reloads, contrast, reduced motion and responsive checks.
+- `browser-tests/theme.spec.ts`: default/persistent themes, storage fallback, tab synchronization, paused character positions, hover/touch/focus, contrast and all-route viewport checks.
 
 All graphics are drawn in project-owned canvas/SVG/CSS; fonts are bundled locally. See [Step 2 add-ons](docs/STEP_2_ADDONS.md) for the approved art direction and changes, and [verification](docs/VERIFICATION.md) for current checks. The phased Phaser migration remains a separate future milestone.

@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 test("a matching saved mango ghost is visible beneath a new moving run", async ({
   page,
 }) => {
+  await page.addInitScript(() => localStorage.setItem("reverse-snake:theme:v1", "dark"));
   const time = new Date("2026-11-14T00:00:00Z");
   await page.clock.install({ time });
   await page.goto("/");
@@ -21,7 +22,7 @@ test("a matching saved mango ghost is visible beneath a new moving run", async (
     .dispatchEvent("click");
   await page.getByRole("checkbox").check();
   await page
-    .getByRole("button", { name: "Close dialog" })
+    .getByRole("button", { name: "Close menu" })
     .dispatchEvent("click");
   await page.getByRole("button", { name: "Let’s play" }).dispatchEvent("click");
   await page.keyboard.down("ArrowLeft");
