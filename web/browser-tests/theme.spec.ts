@@ -103,7 +103,7 @@ test("hover opens and highlights options; click pins, Escape and outside click c
   const dark = menu(page).getByRole("button", { name: "Dark", exact: true });
   const background = await dark.evaluate(el => getComputedStyle(el).backgroundColor);
   await dark.hover();
-  expect(await dark.evaluate(el => getComputedStyle(el).backgroundColor)).not.toBe(background);
+  await expect.poll(() => dark.evaluate(el => getComputedStyle(el).backgroundColor)).not.toBe(background);
   await expect(light).toHaveAttribute("aria-pressed", "true");
   await page.mouse.move(5, 200);
   await expect(menu(page)).toHaveCount(0);
