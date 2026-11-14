@@ -8,7 +8,7 @@ Theme coverage verifies fresh light default, saved dark and reload across all fo
 
 Both themes and their open menus fit Mango, Hunter, Challenges and Replays at 1440 × 900, 320 × 568 and 844 × 390. The existing twelve main-game viewport checks also pass. Desktop and phone theme/menu captures are in screenshots/theme-*.png and have been visually reviewed. The historical dark-art pixel tests explicitly select dark; fresh-default/new-mode/theme checks exercise light.
 
-Hosted production verification remains NOT VERIFIED under the existing user waiver. GitHub delivery and CI evidence are recorded in RELEASE.md; these local checks do not establish the deployed Vercel version.
+[GitHub Linux CI run 43536871523](https://github.com/A4B4RG/Reverse-Snake-/actions/runs/43536871523) also passes clean install, audit, 44 rules tests, lint, build, types and 43 browser tests with the existing visibility skip at source/test revision 36668b39f7d41b46fa12aa8d50aade06d24736c2. Hosted production verification remains NOT VERIFIED under the existing user waiver. GitHub delivery and CI evidence are recorded in RELEASE.md; these checks do not establish the deployed Vercel version.
 
 ## Candidate 1.1.0 — current verification
 

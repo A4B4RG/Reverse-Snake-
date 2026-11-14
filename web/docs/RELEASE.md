@@ -4,7 +4,9 @@
 
 The current source adds default light and saved original dark palettes, a shared Theme menu across all modes/replay, mouse hover opening and touch/click toggling. The update is based on main cb933bf005fc0b8e4e8c4d53f10fd307e260ab11. Local verification passes 44 rules tests, lint, production build, TypeScript and 43 browser tests, with one existing headless tab-visibility skip. Updated visual captures and current product/verification reports accompany the source.
 
-Main delivery remains authorized by the user's instruction to push all work to GitHub main. Hosted Preview/production verification remains NOT VERIFIED under the existing explicit waiver below; refreshing the site only shows the update after Vercel has successfully deployed the new main commit. A GitHub push does not establish that deployed state.
+**Main delivery verified:** implementation 36011f742bee65e0a8336604c6ec6d39a4983168 and the browser-test timing correction at 36668b39f7d41b46fa12aa8d50aade06d24736c2 are pushed to GitHub main. [CI run 43536871523](https://github.com/A4B4RG/Reverse-Snake-/actions/runs/43536871523) passes in 1m50s: clean install, dependency audit, 44 rules tests, lint, build, typecheck and 43 browser passes with one existing headless visibility skip. This evidence update follows those source/test commits.
+
+Hosted Preview/production verification remains NOT VERIFIED under the existing explicit waiver below; refreshing the site only shows the update after Vercel has successfully deployed the new main commit. A GitHub push does not establish that deployed state.
 
 ## Earlier complete-browser release
 
