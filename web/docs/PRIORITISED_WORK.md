@@ -14,4 +14,4 @@ The complete-build specification supplied on 14 November governs scope. Existing
 | External | Human balance and physical-device validation | Checklist prepared. No invented tester or phone results; pending genuine access. |
 | Conditional | Phaser / online / editor / Android | Deferred for the concrete reasons in TECHNICAL_DECISIONS.md. No speculative infrastructure. |
 
-The explicit adaptive-gameplay request is implemented: flexible boards, both neural policies, bottom-aligned desktop controls, full fruit ghosts, animated blurred pause and selectable fruit/snake skins. Score multipliers remain unchanged. Adaptive balance remains a subject for real playtesting.
+The explicit adaptive-gameplay request is implemented: flexible boards, both neural policies, desktop controls directly beneath the game frame, full fruit ghosts, animated blurred pause and selectable fruit/snake skins. The main hero heading and spacing are reduced. Score multipliers remain unchanged. Adaptive balance remains a subject for real playtesting.

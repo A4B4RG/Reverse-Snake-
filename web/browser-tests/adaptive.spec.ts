@@ -135,10 +135,10 @@ test("the outer rectangle is fully playable and fullscreen grows the board", asy
     }));
   const normal = await geometry();
   const control = (await page.locator(".controls-section").boundingBox())!,
-    sidebar = (await page.locator(".game-sidebar").boundingBox())!;
-  expect(
-    Math.abs(control.y + control.height - sidebar.y - sidebar.height),
-  ).toBeLessThan(2);
+    arcade = (await page.locator(".arcade").boundingBox())!;
+  expect(control.y).toBeGreaterThanOrEqual(arcade.y + arcade.height);
+  expect(control.x).toBeCloseTo(arcade.x, 0);
+  expect(control.width).toBeCloseTo(arcade.width, 0);
   await page.getByRole("button", { name: "Enter fullscreen" }).click();
   await expect
     .poll(async () => {

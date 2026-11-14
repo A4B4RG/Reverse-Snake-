@@ -1,5 +1,9 @@
 # Verification
 
+## Controls beneath the map — 14 November 2026
+
+Production build, ESLint and TypeScript pass. The 21 targeted Chrome browser checks pass: all twelve main-game viewport sizes, guide placement below and aligned with the game frame, larger fullscreen geometry, both theme/menu palettes across all routes, text contrast, animated paused playback, and Wild Heart idle/chase regressions. The existing placement assertion now checks the game frame instead of the sidebar. Updated local desktop, phone, both-theme, pause and fullscreen screenshots were visually inspected. Gameplay rules and dependencies are unchanged; hosted Vercel verification remains NOT VERIFIED under the existing waiver.
+
 ## Adaptive browser release 1.2.0 — 14 November 2026
 
 Final local production verification with Node 24 and installed Chrome passes **54 rules tests**, **53 browser tests** and one explicitly documented headless tab-visibility skip. ESLint, TypeScript, production build and the full dependency audit pass; audit reports zero vulnerabilities. The lockfile version changes to 1.2.0 without adding an ML/runtime dependency.

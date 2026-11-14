@@ -1,5 +1,9 @@
 # Release evidence
 
+## Controls beneath the map — 14 November 2026
+
+“A few handy moves” now sits directly below the desktop game frame in a compact panel of matching width. The sidebar contains setup, and the “Outsmart the hunter” heading, fruit ornament and padding are smaller. Responsive touch layouts and the flexible fullscreen board are retained. Build, lint, types and 21 targeted browser checks pass; updated screenshots and current product reports accompany the change. This update builds on main `91d55fb752a9c904c72516d9deaf751d7e644754`. Main delivery remains authorized; hosted Preview/production verification remains NOT VERIFIED under the existing user waiver.
+
 ## Adaptive browser release 1.2.0 — 14 November 2026
 
 This release replaces the fixed square playfield with full outer-rectangle geometry and a larger fullscreen board, adds local trainable fruit/snake opponents, bottom-aligned desktop controls, full fruit ghosts at 32% opacity, independent recorded gameplay behind translucent blurred pause, and five fruit/four snake appearances selected before matches. Apple/Jade are the fresh defaults; the presentation is fruit-neutral. Old scores and canopy-2 replay playback are retained. New recordings capture geometry, cosmetics, initial neural snapshots and resize commands.
