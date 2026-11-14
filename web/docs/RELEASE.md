@@ -10,6 +10,8 @@ New version 1.4.0 / orchard-5 recordings capture voluntary endings, Hunter modes
 
 Final local checks: **67 rules tests**, **61 Chrome browser passes**, one existing headless tab-visibility skip, production build, lint, types and **zero audit findings**. VERIFICATION.md records the new coverage and the unchanged physical-device/other-browser limits.
 
+Implementation `8bd51dbc8adea5455237d71abb1979b42053d8c1` is pushed to main. Its [first Linux CI run](https://github.com/A4B4RG/Reverse-Snake-/actions/runs/43582633099) passed all non-browser checks and 59 browser cases; two new Food fullscreen checks failed by sampling before asynchronous resize/render. The test correction waits for the rendered geometry and verifies fresh directional input in both player roles; VERIFICATION.md records the reproduced failures and final rerun evidence.
+
 Repository: https://github.com/A4B4RG/Reverse-Snake-, branch **main**. Pre-update rollback checkpoint: `720c9d189b7320c02eb084f99450a219f2c7cb23`. Source, tests, reports, retained engines and captures are delivered through the existing main integration. The [main workflow](https://github.com/A4B4RG/Reverse-Snake-/actions/workflows/verify.yml?query=branch%3Amain) identifies each exact pushed revision and its clean-install/Linux verification.
 
 Hosted Preview/production gameplay remains **NOT VERIFIED** under the explicit instruction **“Push main; document hosted verification gap.”** The declined access is not bypassed. Source push/CI does not establish the deployed version at https://reverse-snake-chi.vercel.app. A reviewed revert on main provides source rollback; it does not restore cleared browser-local saves.

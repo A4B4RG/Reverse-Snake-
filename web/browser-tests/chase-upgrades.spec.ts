@@ -1,6 +1,19 @@
 import { expect, test, type Page } from "@playwright/test";
 import { fruit, swipe } from "./helpers";
-import { obstaclesFor } from "../src/lib/game";
+import { obstaclesFor, type Direction } from "../src/lib/game";
+import { boardForSize } from "../src/lib/board";
+
+async function renderedBoard(page: Page) {
+  await expect.poll(async () => {
+    await page.clock.runFor(20);
+    const c = await page.locator("canvas").evaluate((canvas: HTMLCanvasElement) => {
+      const r = canvas.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+      return { width: Math.round(r.width), height: Math.round(r.height), bitmapWidth: canvas.width, bitmapHeight: canvas.height, dpr, columns: Number(canvas.dataset.columns), rows: Number(canvas.dataset.rows) };
+    });
+    const expected = boardForSize(c.width, c.height);
+    return c.columns === expected.columns && c.rows === expected.rows && c.bitmapWidth === Math.round(c.width * c.dpr) && c.bitmapHeight === Math.round(c.height * c.dpr);
+  }, { intervals: [20, 50, 100] }).toBe(true);
+}
 
 async function snakeHead(page: Page) {
   return page.locator("canvas").evaluate((canvas: HTMLCanvasElement) => {
@@ -23,27 +36,37 @@ for (const mode of ["food", "hunter"] as const) for (const touch of [false, true
     if (touch) await swipe(page, mode === "food" ? "left" : "right");
     else await page.keyboard.down(mode === "food" ? "ArrowLeft" : "ArrowRight");
     await page.clock.runFor(120);
+    let foodDirection: Direction = "left";
     for (const full of [true, false]) {
       await page.getByRole("button", { name: mode === "hunter" ? "Toggle fullscreen" : full ? "Enter fullscreen" : "Exit fullscreen" }).click();
       await page.clock.runFor(60);
       expect(await page.evaluate(() => Boolean(document.fullscreenElement))).toBe(full);
       await expect(page.locator("canvas")).toBeFocused();
+      await renderedBoard(page);
       await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "running");
       if (mode === "hunter") {
         const before = await snakeHead(page);
         const direction = full ? "down" : "left";
         if (touch) await swipe(page, direction); else await page.keyboard.press(full ? "ArrowDown" : "ArrowLeft");
-        await page.clock.runFor(120);
-        const after = await snakeHead(page);
-        if (full) expect(after.y).toBeGreaterThan(before.y); else expect(after.x).toBeLessThan(before.x);
+        await expect.poll(async () => {
+          await page.clock.runFor(20);
+          const after = await snakeHead(page);
+          return full ? after.y > before.y : after.x < before.x;
+        }, { intervals: [20, 50, 100] }).toBe(true);
       } else {
         const before = await fruit(page), board = await page.locator("canvas").evaluate(c => ({ columns: Number(c.dataset.columns), rows: Number(c.dataset.rows) }));
         const walls = obstaclesFor(0, board);
         const delta = [{ d: "left", x: -1, y: 0 }, { d: "up", x: 0, y: -1 }, { d: "right", x: 1, y: 0 }, { d: "down", x: 0, y: 1 }] as const;
-        const move = delta.find(v => { const x = before.x + v.x, y = before.y + v.y; return x >= 0 && y >= 0 && x < board.columns && y < board.rows && !walls.some(p => p.x === x && p.y === y); })!;
-        if (touch) await swipe(page, move.d); else { await page.keyboard.up("ArrowLeft"); await page.keyboard.down(`Arrow${move.d[0].toUpperCase()}${move.d.slice(1)}`); }
-        await page.clock.runFor(100);
-        expect(await fruit(page)).toEqual({ x: before.x + move.x, y: before.y + move.y });
+        const move = delta.find(v => { const x = before.x + v.x, y = before.y + v.y; return v.d !== foodDirection && x >= 0 && y >= 0 && x < board.columns && y < board.rows && !walls.some(p => p.x === x && p.y === y); })!;
+        if (touch) await swipe(page, move.d); else { await page.keyboard.up(`Arrow${foodDirection[0].toUpperCase()}${foodDirection.slice(1)}`); await page.keyboard.down(`Arrow${move.d[0].toUpperCase()}${move.d.slice(1)}`); }
+        foodDirection = move.d;
+        await page.clock.runFor(40);
+        const steeredFrom = await fruit(page);
+        await expect.poll(async () => {
+          await page.clock.runFor(20);
+          const after = await fruit(page);
+          return move.x ? after.y === steeredFrom.y && (after.x - steeredFrom.x) * move.x > 0 : after.x === steeredFrom.x && (after.y - steeredFrom.y) * move.y > 0;
+        }, { intervals: [20, 50, 100] }).toBe(true);
       }
       await expect(page.locator(".board-stage")).toHaveAttribute("data-phase", "running");
     }
