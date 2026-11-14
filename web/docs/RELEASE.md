@@ -4,6 +4,8 @@
 
 Menu now toggles through click/tap or keyboard activation; hovering leaves gameplay running. The Mango page offers the Hunter link and the Hunter page offers the Mango link, omitting their own mode from those two options. Light/dark settings and the other menu actions remain available. Local lint, production build, TypeScript and the full browser suite pass: 44 browser passes and one existing headless visibility skip. This update builds on main e6d7fdd813f476fa3723e5d4315c93c34ba4d8b6. Main delivery remains authorized and hosted verification remains NOT VERIFIED under the existing user waiver.
 
+**Main delivery verified:** source 6cacab4024d89024ea1bd4a4dc77e7889e87af0d is pushed. [CI run 43539241424](https://github.com/A4B4RG/Reverse-Snake-/actions/runs/43539241424) passes in 2m2s: clean install, zero-findings audit, 44 rules tests, lint, build, TypeScript and 44 browser passes with one existing headless visibility skip. This evidence update follows the verified source commit.
+
 ## Theme and hover-menu update — 14 November 2026
 
 The current source adds default light and saved original dark palettes, a shared Theme menu across all modes/replay, mouse hover opening and touch/click toggling. The update is based on main cb933bf005fc0b8e4e8c4d53f10fd307e260ab11. Local verification passes 44 rules tests, lint, production build, TypeScript and 43 browser tests, with one existing headless tab-visibility skip. Updated visual captures and current product/verification reports accompany the source.

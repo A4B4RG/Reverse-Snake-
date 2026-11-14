@@ -4,7 +4,7 @@
 
 ESLint, production build and TypeScript pass. The full local Chrome browser suite passes **44 tests**, with the existing explicit headless tab-visibility skip. The menu test verifies that hovering leaves a live chase running, click/keyboard activation opens the menu and pauses gameplay, touch toggles it, and Escape/outside/close actions restore the expected focus. Route navigation verifies that Mango offers Hunter and Hunter offers Mango, without their own mode link, including during active rounds. Existing theme, replay, ghost, fullscreen, input and viewport checks pass. Updated menu screenshots show the current options. Rules and dependencies are unchanged.
 
-Hosted verification remains NOT VERIFIED under the existing waiver. The release evidence below preserves the previous theme implementation's CI result.
+[GitHub Linux CI run 43539241424](https://github.com/A4B4RG/Reverse-Snake-/actions/runs/43539241424) also passes clean install, zero-findings audit, 44 rules tests, lint, build, types and 44 browser tests with the existing visibility skip at source revision 6cacab4024d89024ea1bd4a4dc77e7889e87af0d. Hosted verification remains NOT VERIFIED under the existing waiver. The sections below preserve the earlier implementation's evidence.
 
 ## Light/dark themes and hover menu — 14 November 2026
 
