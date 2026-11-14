@@ -95,7 +95,11 @@ test("pause loops the last recorded fruit-and-snake match without advancing live
   await page.keyboard.down("ArrowDown");
   await page.clock.runFor(200);
   await page.keyboard.up("ArrowDown");
+  // Let the renderer catch up after releasing movement before sampling pixels.
+  await page.clock.runFor(40);
   const before = await fruit(page);
+  await page.clock.runFor(120);
+  expect(await fruit(page)).toEqual(before);
   await page.keyboard.press("Escape");
   await page.clock.runFor(40);
   const time = await page.locator("canvas").getAttribute("data-elapsed"),

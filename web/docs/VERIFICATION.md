@@ -10,6 +10,8 @@ Browser coverage verifies full outer-rectangle Canvas sizing, larger fullscreen 
 
 Desktop, phone, both theme palettes, paused playback and fullscreen captures were visually inspected in screenshots/. Production sampling is described in PERFORMANCE.md. Physical devices, Firefox/Safari, external player balance and real headed tab visibility remain unverified; the existing blur-event pause wiring test passes. These local checks do not establish a deployed Vercel version.
 
+The first adaptive-release [Linux CI run 43558184325](https://github.com/A4B4RG/Reverse-Snake-/actions/runs/43558184325) passed installation, audit, rules, lint, build and types, but failed the pause test because its initial pixel sample could show the preceding simulation frame. The corrected test allows the renderer to catch up after movement release, verifies the fruit is stationary before pausing, and still verifies frozen live time/HUD, animated blurred playback and unchanged fruit position on resume. Six consecutive local runs with Playwright Chromium pass.
+
 The existing [main verification workflow](https://github.com/A4B4RG/Reverse-Snake-/actions/workflows/verify.yml?query=branch%3Amain) runs clean installation, audit, rules, lint, build, types and browser checks on the pushed commit. Hosted Preview/production verification remains **NOT VERIFIED** under the user's explicit waiver recorded in RELEASE.md.
 
 ## Mango presentation cleanup — 14 November 2026
